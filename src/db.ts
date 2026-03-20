@@ -7,6 +7,13 @@ export interface TapRecord {
   value: number  // +step or -step
 }
 
+export interface NoteRecord {
+  id?: number
+  text: string
+  timestamp: number
+  counterName: string  // name of active counter at time of note
+}
+
 export interface Counter {
   id: string
   name: string
@@ -15,7 +22,7 @@ export interface Counter {
 }
 
 const DB_NAME = 'stigme'
-const DB_VERSION = 2
+const DB_VERSION = 3
 
 let dbPromise: Promise<IDBPDatabase> | null = null
 
@@ -34,8 +41,14 @@ function getDb() {
           const counterStore = db.createObjectStore('counters', { keyPath: 'id' })
           counterStore.createIndex('by-created', 'createdAt')
         }
-        // v2: added `value` field to TapRecord — no schema changes needed,
-        // existing records without `value` are treated as +1 in getCount()
+        // v2: added `value` field to TapRecord — no schema changes needed
+        if (oldVersion < 3) {
+          const noteStore = db.createObjectStore('notes', {
+            keyPath: 'id',
+            autoIncrement: true,
+          })
+          noteStore.createIndex('by-timestamp', 'timestamp')
+        }
       },
     })
   }
@@ -99,4 +112,21 @@ export async function clearTaps(counterId: string): Promise<void> {
     await tx.store.delete(key)
   }
   await tx.done
+}
+
+export async function addNote(text: string, counterName: string): Promise<NoteRecord> {
+  const db = await getDb()
+  const record: NoteRecord = { text, timestamp: Date.now(), counterName }
+  record.id = (await db.add('notes', record)) as number
+  return record
+}
+
+export async function getNotes(): Promise<NoteRecord[]> {
+  const db = await getDb()
+  return db.getAllFromIndex('notes', 'by-timestamp')
+}
+
+export async function deleteNote(id: number): Promise<void> {
+  const db = await getDb()
+  await db.delete('notes', id)
 }

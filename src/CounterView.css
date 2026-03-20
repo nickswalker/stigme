@@ -229,7 +229,7 @@
 .bottom-controls {
   display: flex;
   justify-content: center;
-  gap: 28px;
+  gap: 16px;
   padding: 16px 20px;
   padding-bottom: max(24px, env(safe-area-inset-bottom));
   background: var(--bg2);
@@ -340,10 +340,30 @@
 .history-value.positive { color: var(--success); }
 .history-value.negative { color: var(--danger); }
 
-.history-time {
-  font-size: 15px;
+.history-item--note {
+  gap: 8px;
+  align-items: flex-start;
+}
+
+.history-note-icon {
+  color: var(--text-dim);
+  flex-shrink: 0;
+  padding-top: 2px;
+}
+
+.history-note-text {
+  flex: 1;
+  font-size: 14px;
   color: var(--text);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.history-time {
+  font-size: 13px;
+  color: var(--text-dim);
   font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
 }
 
 .empty-msg {

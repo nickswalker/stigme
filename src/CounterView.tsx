@@ -1,7 +1,8 @@
 import { useState, useCallback, useRef } from 'react'
 import { useCounter } from './useCounter'
-import { getTapsForCounter, type TapRecord } from './db'
+import { getTapsForCounter, getNotes, addNote, type TapRecord, type NoteRecord } from './db'
 import type { Counter } from './db'
+import { NoteModal } from './NoteModal'
 import './CounterView.css'
 
 interface Props {
@@ -10,13 +11,18 @@ interface Props {
   onCounterUpdate: (counter: Counter) => void
 }
 
+type HistoryEntry =
+  | { kind: 'tap'; rec: TapRecord }
+  | { kind: 'note'; rec: NoteRecord }
+
 export function CounterView({ counterId, onShowList, onCounterUpdate }: Props) {
   const { count, counter, loading, increment, decrement, undo, canUndo, reset, rename, setStep } = useCounter(counterId)
   const [editingName, setEditingName] = useState(false)
   const [nameInput, setNameInput] = useState('')
   const [showSettings, setShowSettings] = useState(false)
   const [showHistory, setShowHistory] = useState(false)
-  const [history, setHistory] = useState<TapRecord[]>([])
+  const [history, setHistory] = useState<HistoryEntry[]>([])
+  const [showNote, setShowNote] = useState(false)
   const [confirmReset, setConfirmReset] = useState(false)
   const [, forceUpdate] = useState(0)
   const tapButtonRef = useRef<HTMLButtonElement>(null)
@@ -51,6 +57,11 @@ export function CounterView({ counterId, onShowList, onCounterUpdate }: Props) {
     if (counter) onCounterUpdate({ ...counter })
   }, [reset, confirmReset, counter, onCounterUpdate])
 
+  const handleSaveNote = useCallback(async (text: string) => {
+    await addNote(text, counter?.name ?? 'Counter')
+    setShowNote(false)
+  }, [counter])
+
   const startRename = useCallback(() => {
     setNameInput(counter?.name ?? '')
     setEditingName(true)
@@ -66,22 +77,42 @@ export function CounterView({ counterId, onShowList, onCounterUpdate }: Props) {
   }, [nameInput, rename, counter, onCounterUpdate])
 
   const openHistory = useCallback(async () => {
-    const taps = await getTapsForCounter(counterId)
-    setHistory([...taps].reverse())
+    const [taps, notes] = await Promise.all([
+      getTapsForCounter(counterId),
+      getNotes(),
+    ])
+    const counterName = counter?.name ?? 'Counter'
+    const entries: HistoryEntry[] = [
+      ...taps.map(rec => ({ kind: 'tap' as const, rec })),
+      ...notes
+        .filter(n => n.counterName === counterName)
+        .map(rec => ({ kind: 'note' as const, rec })),
+    ].sort((a, b) => b.rec.timestamp - a.rec.timestamp)
+    setHistory(entries)
     setShowHistory(true)
-  }, [counterId])
+  }, [counterId, counter])
 
   const downloadHistory = useCallback(async () => {
-    const taps = await getTapsForCounter(counterId)
+    const [taps, notes] = await Promise.all([
+      getTapsForCounter(counterId),
+      getNotes(),
+    ])
     const name = counter?.name ?? 'Counter'
+    const tapRows = taps.map(r => ({
+      ts: r.timestamp,
+      cols: [name, r.value >= 0 ? 'increment' : 'decrement', String(r.value), ''],
+    }))
+    const noteRows = notes
+      .filter(n => n.counterName === name)
+      .map(n => ({
+        ts: n.timestamp,
+        cols: [name, 'note', '', n.text.replace(/\t|\n/g, ' ')],
+      }))
     const rows = [
-      ['Counter', 'Action', 'Value', 'Timestamp'].join('\t'),
-      ...taps.map(r => [
-        name,
-        r.value >= 0 ? 'increment' : 'decrement',
-        r.value,
-        new Date(r.timestamp).toISOString(),
-      ].join('\t')),
+      ['Counter', 'Action', 'Value', 'Note', 'Timestamp'].join('\t'),
+      ...[...tapRows, ...noteRows]
+        .sort((a, b) => a.ts - b.ts)
+        .map(r => [...r.cols, new Date(r.ts).toISOString()].join('\t')),
     ]
     const blob = new Blob([rows.join('\n')], { type: 'text/tab-separated-values' })
     const url = URL.createObjectURL(blob)
@@ -198,6 +229,15 @@ export function CounterView({ counterId, onShowList, onCounterUpdate }: Props) {
           </svg>
         </button>
 
+        <button className="ctrl-btn note" onClick={() => setShowNote(true)} aria-label="Add note">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <rect x="9" y="2" width="6" height="11" rx="3" />
+            <path d="M5 10a7 7 0 0014 0" />
+            <line x1="12" y1="19" x2="12" y2="22" />
+            <line x1="9" y1="22" x2="15" y2="22" />
+          </svg>
+        </button>
+
         <button
           className={`ctrl-btn reset ${confirmReset ? 'confirm' : ''}`}
           onClick={handleReset}
@@ -214,12 +254,17 @@ export function CounterView({ counterId, onShowList, onCounterUpdate }: Props) {
         </button>
       </div>
 
+      {/* Note modal */}
+      {showNote && (
+        <NoteModal onSave={handleSaveNote} onClose={() => setShowNote(false)} />
+      )}
+
       {/* History modal */}
       {showHistory && (
         <div className="modal-overlay" onClick={() => setShowHistory(false)}>
           <div className="modal" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
-              <h2>Tap History</h2>
+              <h2>History</h2>
               <button className="icon-btn" onClick={() => setShowHistory(false)}>
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <line x1="18" y1="6" x2="6" y2="18" />
@@ -229,16 +274,31 @@ export function CounterView({ counterId, onShowList, onCounterUpdate }: Props) {
             </div>
             <div className="history-list">
               {history.length === 0 ? (
-                <p className="empty-msg">No taps yet</p>
+                <p className="empty-msg">No history yet</p>
               ) : (
-                history.map((rec) => (
-                  <div key={rec.id} className="history-item">
-                    <span className={`history-value ${rec.value >= 0 ? 'positive' : 'negative'}`}>
-                      {rec.value >= 0 ? '+' : ''}{rec.value}
-                    </span>
-                    <span className="history-time">{formatTimestamp(rec.timestamp)}</span>
-                  </div>
-                ))
+                history.map((entry, i) =>
+                  entry.kind === 'tap' ? (
+                    <div key={`tap-${entry.rec.id}`} className="history-item">
+                      <span className={`history-value ${entry.rec.value >= 0 ? 'positive' : 'negative'}`}>
+                        {entry.rec.value >= 0 ? '+' : ''}{entry.rec.value}
+                      </span>
+                      <span className="history-time">{formatTimestamp(entry.rec.timestamp)}</span>
+                    </div>
+                  ) : (
+                    <div key={`note-${entry.rec.id ?? i}`} className="history-item history-item--note">
+                      <span className="history-note-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="14" height="14">
+                          <rect x="9" y="2" width="6" height="11" rx="3" />
+                          <path d="M5 10a7 7 0 0014 0" />
+                          <line x1="12" y1="19" x2="12" y2="22" />
+                          <line x1="9" y1="22" x2="15" y2="22" />
+                        </svg>
+                      </span>
+                      <span className="history-note-text">{entry.rec.text}</span>
+                      <span className="history-time">{formatTimestamp(entry.rec.timestamp)}</span>
+                    </div>
+                  )
+                )
               )}
             </div>
           </div>
