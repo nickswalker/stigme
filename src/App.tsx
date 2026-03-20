@@ -64,7 +64,7 @@ export default function App() {
   }, [])
 
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
-    if (view !== 'counter' || counters.length <= 1 || view === 'settings') return
+    if (view !== 'counter' || counters.length <= 1) return
     if ((e.target as Element).closest?.('.modal-overlay')) return
     const t = e.touches[0]
     if (t.clientX < 20 || t.clientX > window.innerWidth - 20) return
