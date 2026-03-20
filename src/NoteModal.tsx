@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
+import { getPreferKeyboardDictation } from './SettingsView'
 import './NoteModal.css'
 
 interface Props {
@@ -38,7 +39,7 @@ export function NoteModal({ onSave, onClose }: Props) {
   }, [])
 
   useEffect(() => {
-    if (speechSupported) {
+    if (speechSupported && !getPreferKeyboardDictation()) {
       startListening()
     } else {
       textareaRef.current?.focus()
@@ -78,7 +79,7 @@ export function NoteModal({ onSave, onClose }: Props) {
             value={text}
             onChange={e => setText(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder={speechSupported ? 'Listening… or type here' : 'Type a note…'}
+            placeholder={speechSupported && !getPreferKeyboardDictation() ? 'Listening… or type here' : 'Type a note…'}
           />
           {speechSupported && (
             <button

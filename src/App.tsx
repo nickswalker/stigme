@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { CounterView } from './CounterView'
 import { CounterList } from './CounterList'
+import { SettingsView } from './SettingsView'
 import { getCounters, saveCounter, deleteCounter, type Counter } from './db'
 import { BUTTON_HUES } from './colors'
 import './App.css'
@@ -8,7 +9,7 @@ import './App.css'
 export default function App() {
   const [counters, setCounters] = useState<Counter[]>([])
   const [activeId, setActiveId] = useState<string | null>(null)
-  const [view, setView] = useState<'counter' | 'list'>('counter')
+  const [view, setView] = useState<'counter' | 'list' | 'settings'>('counter')
   const [slideDir, setSlideDir] = useState<'left' | 'right' | null>(null)
   const touchStartRef = useRef<{ x: number; y: number } | null>(null)
 
@@ -63,7 +64,7 @@ export default function App() {
   }, [])
 
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
-    if (view !== 'counter' || counters.length <= 1) return
+    if (view !== 'counter' || counters.length <= 1 || view === 'settings') return
     if ((e.target as Element).closest?.('.modal-overlay')) return
     const t = e.touches[0]
     if (t.clientX < 20 || t.clientX > window.innerWidth - 20) return
@@ -115,7 +116,7 @@ export default function App() {
           onShowList={() => setView('list')}
           onCounterUpdate={onCounterUpdate}
         />
-      ) : (
+      ) : view === 'list' ? (
         <CounterList
           counters={counters}
           activeId={activeId}
@@ -123,7 +124,10 @@ export default function App() {
           onAdd={addCounter}
           onDelete={removeCounter}
           onClose={() => setView('counter')}
+          onShowSettings={() => setView('settings')}
         />
+      ) : (
+        <SettingsView onClose={() => setView('list')} />
       )}
     </div>
   )
