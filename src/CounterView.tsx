@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef } from 'react'
 import { useCounter } from './useCounter'
-import { getTapsForCounter, getNotes, addNote, type TapRecord, type NoteRecord } from './db'
+import { getTapsForCounter, getNotes, addNote, deleteNote, type TapRecord, type NoteRecord } from './db'
 import type { Counter } from './db'
 import { NoteModal } from './NoteModal'
 import './CounterView.css'
@@ -23,7 +23,7 @@ type HistoryEntry =
 
 export function CounterView({ counterId, colorIndex, slideDir, prevHue, nextHue, onShowList, onCounterUpdate }: Props) {
   const hue = BUTTON_HUES[colorIndex % BUTTON_HUES.length]
-  const { count, counter, loading, increment, decrement, undo, canUndo, reset, rename, setStep } = useCounter(counterId)
+  const { count, counter, loading, increment, decrement, undo, canUndo, deleteTap, reset, rename, setStep } = useCounter(counterId)
   const [editingName, setEditingName] = useState(false)
   const [nameInput, setNameInput] = useState('')
   const [showSettings, setShowSettings] = useState(false)
@@ -32,6 +32,8 @@ export function CounterView({ counterId, colorIndex, slideDir, prevHue, nextHue,
   const [showNote, setShowNote] = useState(false)
   const [confirmReset, setConfirmReset] = useState(false)
   const [, forceUpdate] = useState(0)
+  const [swipedKey, setSwipedKey] = useState<string | null>(null)
+  const rowTouchRef = useRef<{ startX: number; startY: number; key: string } | null>(null)
   const tapButtonRef = useRef<HTMLButtonElement>(null)
 
   const handleTap = useCallback(async () => {
@@ -98,6 +100,35 @@ export function CounterView({ counterId, colorIndex, slideDir, prevHue, nextHue,
     setHistory(entries)
     setShowHistory(true)
   }, [counterId, counter])
+
+  const handleDeleteEntry = useCallback(async (entry: HistoryEntry) => {
+    if (entry.kind === 'tap' && entry.rec.id != null) {
+      await deleteTap(entry.rec.id, entry.rec.value)
+      forceUpdate(n => n + 1)
+    } else if (entry.kind === 'note' && entry.rec.id != null) {
+      await deleteNote(entry.rec.id)
+    }
+    setHistory(prev => prev.filter(e => e !== entry))
+    setSwipedKey(null)
+  }, [deleteTap])
+
+  function onRowTouchStart(e: React.TouchEvent, key: string) {
+    const t = e.touches[0]
+    rowTouchRef.current = { startX: t.clientX, startY: t.clientY, key }
+  }
+
+  function onRowTouchMove(e: React.TouchEvent) {
+    if (!rowTouchRef.current) return
+    const t = e.touches[0]
+    const dx = t.clientX - rowTouchRef.current.startX
+    const dy = t.clientY - rowTouchRef.current.startY
+    if (Math.abs(dy) > Math.abs(dx) + 5) { rowTouchRef.current = null; return }
+    const { key } = rowTouchRef.current
+    if (dx < -40) setSwipedKey(key)
+    else if (dx > 10 && swipedKey === key) setSwipedKey(null)
+  }
+
+  function onRowTouchEnd() { rowTouchRef.current = null }
 
   const downloadHistory = useCallback(async () => {
     const [taps, notes] = await Promise.all([
@@ -286,33 +317,52 @@ export function CounterView({ counterId, colorIndex, slideDir, prevHue, nextHue,
                 </svg>
               </button>
             </div>
-            <div className="history-list">
+            <div className="history-list" onClick={() => setSwipedKey(null)}>
               {history.length === 0 ? (
                 <p className="empty-msg">No history yet</p>
               ) : (
-                history.map((entry, i) =>
-                  entry.kind === 'tap' ? (
-                    <div key={`tap-${entry.rec.id}`} className="history-item">
-                      <span className={`history-value ${entry.rec.value >= 0 ? 'positive' : 'negative'}`}>
-                        {entry.rec.value >= 0 ? '+' : ''}{entry.rec.value}
-                      </span>
-                      <span className="history-time">{formatTimestamp(entry.rec.timestamp)}</span>
-                    </div>
-                  ) : (
-                    <div key={`note-${entry.rec.id ?? i}`} className="history-item history-item--note">
-                      <span className="history-note-icon">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="14" height="14">
-                          <rect x="9" y="2" width="6" height="11" rx="3" />
-                          <path d="M5 10a7 7 0 0014 0" />
-                          <line x1="12" y1="19" x2="12" y2="22" />
-                          <line x1="9" y1="22" x2="15" y2="22" />
-                        </svg>
-                      </span>
-                      <span className="history-note-text">{entry.rec.text}</span>
-                      <span className="history-time">{formatTimestamp(entry.rec.timestamp)}</span>
+                history.map((entry, i) => {
+                  const key = entry.kind === 'tap' ? `tap-${entry.rec.id}` : `note-${entry.rec.id ?? i}`
+                  const swiped = swipedKey === key
+                  return (
+                    <div
+                      key={key}
+                      className="history-item-wrap"
+                      onTouchStart={e => onRowTouchStart(e, key)}
+                      onTouchMove={onRowTouchMove}
+                      onTouchEnd={onRowTouchEnd}
+                    >
+                      {entry.kind === 'tap' ? (
+                        <div className={`history-item${swiped ? ' swiped' : ''}`}>
+                          <span className={`history-value ${entry.rec.value >= 0 ? 'positive' : 'negative'}`}>
+                            {entry.rec.value >= 0 ? '+' : ''}{entry.rec.value}
+                          </span>
+                          <span className="history-time">{formatTimestamp(entry.rec.timestamp)}</span>
+                        </div>
+                      ) : (
+                        <div className={`history-item history-item--note${swiped ? ' swiped' : ''}`}>
+                          <span className="history-note-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="14" height="14">
+                              <rect x="9" y="2" width="6" height="11" rx="3" />
+                              <path d="M5 10a7 7 0 0014 0" />
+                              <line x1="12" y1="19" x2="12" y2="22" />
+                              <line x1="9" y1="22" x2="15" y2="22" />
+                            </svg>
+                          </span>
+                          <span className="history-note-text">{entry.rec.text}</span>
+                          <span className="history-time">{formatTimestamp(entry.rec.timestamp)}</span>
+                        </div>
+                      )}
+                      <button
+                        className="history-delete-btn"
+                        onClick={e => { e.stopPropagation(); handleDeleteEntry(entry) }}
+                        aria-label="Delete entry"
+                      >
+                        Delete
+                      </button>
                     </div>
                   )
-                )
+                })
               )}
             </div>
           </div>

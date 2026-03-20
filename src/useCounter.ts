@@ -63,6 +63,12 @@ export function useCounter(counterId: string) {
 
   const canUndo = useCallback(() => undoStack.current.length > 0, [])
 
+  const deleteTap = useCallback(async (id: number, value: number) => {
+    await removeTap(id)
+    undoStack.current = []
+    setCount(c => c - value)
+  }, [])
+
   const reset = useCallback(async () => {
     await clearTaps(counterId)
     undoStack.current = []
@@ -83,5 +89,5 @@ export function useCounter(counterId: string) {
     setCounter(updated)
   }, [counter])
 
-  return { count, counter, loading, increment, decrement, undo, canUndo, reset, rename, setStep }
+  return { count, counter, loading, increment, decrement, undo, canUndo, deleteTap, reset, rename, setStep }
 }

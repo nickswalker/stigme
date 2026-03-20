@@ -356,16 +356,46 @@
   padding: 8px 0;
 }
 
+.history-item-wrap {
+  position: relative;
+  overflow: hidden;
+  touch-action: pan-y;
+}
+
 .history-item {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 12px 20px;
   border-bottom: 1px solid var(--border);
+  background: var(--bg2);
+  transform: translateX(0);
+  transition: transform 0.2s ease;
+  z-index: 1;
 }
 
-.history-item:last-child {
+.history-item.swiped {
+  transform: translateX(-72px);
+}
+
+.history-item-wrap:last-child .history-item {
   border-bottom: none;
+}
+
+.history-delete-btn {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 72px;
+  background: var(--danger);
+  border: none;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .history-value {
