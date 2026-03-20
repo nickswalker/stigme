@@ -4,6 +4,7 @@ export interface TapRecord {
   id?: number
   counterId: string
   timestamp: number
+  value: number  // +step or -step
 }
 
 export interface Counter {
@@ -14,23 +15,27 @@ export interface Counter {
 }
 
 const DB_NAME = 'stigme'
-const DB_VERSION = 1
+const DB_VERSION = 2
 
 let dbPromise: Promise<IDBPDatabase> | null = null
 
 function getDb() {
   if (!dbPromise) {
     dbPromise = openDB(DB_NAME, DB_VERSION, {
-      upgrade(db) {
-        const tapStore = db.createObjectStore('taps', {
-          keyPath: 'id',
-          autoIncrement: true,
-        })
-        tapStore.createIndex('by-counter', 'counterId')
-        tapStore.createIndex('by-timestamp', 'timestamp')
+      upgrade(db, oldVersion) {
+        if (oldVersion < 1) {
+          const tapStore = db.createObjectStore('taps', {
+            keyPath: 'id',
+            autoIncrement: true,
+          })
+          tapStore.createIndex('by-counter', 'counterId')
+          tapStore.createIndex('by-timestamp', 'timestamp')
 
-        const counterStore = db.createObjectStore('counters', { keyPath: 'id' })
-        counterStore.createIndex('by-created', 'createdAt')
+          const counterStore = db.createObjectStore('counters', { keyPath: 'id' })
+          counterStore.createIndex('by-created', 'createdAt')
+        }
+        // v2: added `value` field to TapRecord — no schema changes needed,
+        // existing records without `value` are treated as +1 in getCount()
       },
     })
   }
@@ -63,9 +68,9 @@ export async function deleteCounter(id: string): Promise<void> {
   await tx.done
 }
 
-export async function addTap(counterId: string): Promise<TapRecord> {
+export async function addTap(counterId: string, value: number): Promise<TapRecord> {
   const db = await getDb()
-  const record: TapRecord = { counterId, timestamp: Date.now() }
+  const record: TapRecord = { counterId, timestamp: Date.now(), value }
   record.id = (await db.add('taps', record)) as number
   return record
 }
@@ -75,20 +80,15 @@ export async function removeTap(id: number): Promise<void> {
   await db.delete('taps', id)
 }
 
-export async function getLastTap(counterId: string): Promise<TapRecord | undefined> {
+export async function getCount(counterId: string): Promise<number> {
   const db = await getDb()
-  const all = await db.getAllFromIndex('taps', 'by-counter', counterId)
-  return all[all.length - 1]
+  const records = await db.getAllFromIndex('taps', 'by-counter', counterId)
+  return records.reduce((sum, r) => sum + (r.value ?? 1), 0)
 }
 
 export async function getTapsForCounter(counterId: string): Promise<TapRecord[]> {
   const db = await getDb()
   return db.getAllFromIndex('taps', 'by-counter', counterId)
-}
-
-export async function getTapCount(counterId: string): Promise<number> {
-  const db = await getDb()
-  return db.countFromIndex('taps', 'by-counter', counterId)
 }
 
 export async function clearTaps(counterId: string): Promise<void> {

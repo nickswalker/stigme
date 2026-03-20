@@ -70,7 +70,6 @@ export default function App() {
         <CounterView
           key={activeId}
           counterId={activeId}
-          totalCounters={counters.length}
           onShowList={() => setView('list')}
           onCounterUpdate={onCounterUpdate}
         />

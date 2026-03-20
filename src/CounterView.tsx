@@ -1,37 +1,43 @@
 import { useState, useCallback, useRef } from 'react'
 import { useCounter } from './useCounter'
-import { getTapsForCounter } from './db'
+import { getTapsForCounter, type TapRecord } from './db'
 import type { Counter } from './db'
 import './CounterView.css'
 
 interface Props {
   counterId: string
-  totalCounters: number
   onShowList: () => void
   onCounterUpdate: (counter: Counter) => void
 }
 
-export function CounterView({ counterId, totalCounters, onShowList, onCounterUpdate }: Props) {
-  const { count, counter, loading, increment, decrement, reset, rename, setStep } = useCounter(counterId)
+export function CounterView({ counterId, onShowList, onCounterUpdate }: Props) {
+  const { count, counter, loading, increment, decrement, undo, canUndo, reset, rename, setStep } = useCounter(counterId)
   const [editingName, setEditingName] = useState(false)
   const [nameInput, setNameInput] = useState('')
   const [showSettings, setShowSettings] = useState(false)
   const [showHistory, setShowHistory] = useState(false)
-  const [history, setHistory] = useState<number[]>([])
+  const [history, setHistory] = useState<TapRecord[]>([])
   const [confirmReset, setConfirmReset] = useState(false)
+  const [, forceUpdate] = useState(0)
   const tapButtonRef = useRef<HTMLButtonElement>(null)
 
   const handleTap = useCallback(async () => {
     await increment()
+    forceUpdate(n => n + 1)
     if (counter) onCounterUpdate({ ...counter })
-    // Haptic feedback on iOS
     if ('vibrate' in navigator) navigator.vibrate(10)
   }, [increment, counter, onCounterUpdate])
 
   const handleDecrement = useCallback(async () => {
     await decrement()
+    forceUpdate(n => n + 1)
     if (counter) onCounterUpdate({ ...counter })
   }, [decrement, counter, onCounterUpdate])
+
+  const handleUndo = useCallback(async () => {
+    await undo()
+    forceUpdate(n => n + 1)
+  }, [undo])
 
   const handleReset = useCallback(async () => {
     if (!confirmReset) {
@@ -41,6 +47,7 @@ export function CounterView({ counterId, totalCounters, onShowList, onCounterUpd
     }
     await reset()
     setConfirmReset(false)
+    forceUpdate(n => n + 1)
     if (counter) onCounterUpdate({ ...counter })
   }, [reset, confirmReset, counter, onCounterUpdate])
 
@@ -60,7 +67,7 @@ export function CounterView({ counterId, totalCounters, onShowList, onCounterUpd
 
   const openHistory = useCallback(async () => {
     const taps = await getTapsForCounter(counterId)
-    setHistory(taps.map(t => t.timestamp).reverse())
+    setHistory([...taps].reverse())
     setShowHistory(true)
   }, [counterId])
 
@@ -70,16 +77,13 @@ export function CounterView({ counterId, totalCounters, onShowList, onCounterUpd
     <div className="counter-view">
       {/* Header */}
       <div className="counter-header">
-        {totalCounters > 1 && (
-          <button className="icon-btn" onClick={onShowList} aria-label="Switch counter">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <line x1="3" y1="6" x2="21" y2="6" />
-              <line x1="3" y1="12" x2="21" y2="12" />
-              <line x1="3" y1="18" x2="21" y2="18" />
-            </svg>
-          </button>
-        )}
-        {totalCounters === 1 && <div />}
+        <button className="icon-btn" onClick={onShowList} aria-label="Counters">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <line x1="3" y1="6" x2="21" y2="6" />
+            <line x1="3" y1="12" x2="21" y2="12" />
+            <line x1="3" y1="18" x2="21" y2="18" />
+          </svg>
+        </button>
 
         {editingName ? (
           <form onSubmit={e => { e.preventDefault(); submitRename() }} className="name-form">
@@ -154,6 +158,18 @@ export function CounterView({ counterId, totalCounters, onShowList, onCounterUpd
         </button>
 
         <button
+          className={`ctrl-btn undo ${!canUndo() ? 'disabled' : ''}`}
+          onClick={handleUndo}
+          disabled={!canUndo()}
+          aria-label="Undo"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <polyline points="9 14 4 9 9 4" />
+            <path d="M20 20v-7a4 4 0 00-4-4H4" />
+          </svg>
+        </button>
+
+        <button
           className={`ctrl-btn reset ${confirmReset ? 'confirm' : ''}`}
           onClick={handleReset}
           aria-label="Reset"
@@ -186,10 +202,12 @@ export function CounterView({ counterId, totalCounters, onShowList, onCounterUpd
               {history.length === 0 ? (
                 <p className="empty-msg">No taps yet</p>
               ) : (
-                history.map((ts, i) => (
-                  <div key={ts} className="history-item">
-                    <span className="history-index">#{history.length - i}</span>
-                    <span className="history-time">{formatTimestamp(ts)}</span>
+                history.map((rec) => (
+                  <div key={rec.id} className="history-item">
+                    <span className={`history-value ${rec.value >= 0 ? 'positive' : 'negative'}`}>
+                      {rec.value >= 0 ? '+' : ''}{rec.value}
+                    </span>
+                    <span className="history-time">{formatTimestamp(rec.timestamp)}</span>
                   </div>
                 ))
               )}

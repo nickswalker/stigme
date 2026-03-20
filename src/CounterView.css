@@ -229,7 +229,7 @@
 .bottom-controls {
   display: flex;
   justify-content: center;
-  gap: 48px;
+  gap: 28px;
   padding: 16px 20px;
   padding-bottom: max(24px, env(safe-area-inset-bottom));
   background: var(--bg2);
@@ -260,6 +260,11 @@
 .ctrl-btn:active {
   transform: scale(0.94);
   background: var(--bg);
+}
+
+.ctrl-btn.undo.disabled {
+  opacity: 0.3;
+  cursor: default;
 }
 
 .ctrl-btn.reset.confirm {
@@ -325,11 +330,15 @@
   border-bottom: none;
 }
 
-.history-index {
-  font-size: 13px;
-  color: var(--text-dim);
-  min-width: 48px;
+.history-value {
+  font-size: 14px;
+  font-weight: 600;
+  min-width: 40px;
+  font-variant-numeric: tabular-nums;
 }
+
+.history-value.positive { color: var(--success); }
+.history-value.negative { color: var(--danger); }
 
 .history-time {
   font-size: 15px;

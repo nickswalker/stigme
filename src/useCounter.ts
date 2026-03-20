@@ -1,12 +1,12 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import {
   addTap,
   removeTap,
-  getLastTap,
-  getTapCount,
+  getCount,
   clearTaps,
   saveCounter,
   getCounter,
+  type TapRecord,
   type Counter,
 } from './db'
 
@@ -14,11 +14,12 @@ export function useCounter(counterId: string) {
   const [count, setCount] = useState(0)
   const [counter, setCounter] = useState<Counter | null>(null)
   const [loading, setLoading] = useState(true)
+  const undoStack = useRef<TapRecord[]>([])
 
   useEffect(() => {
     let cancelled = false
     async function load() {
-      const [c, n] = await Promise.all([getCounter(counterId), getTapCount(counterId)])
+      const [c, n] = await Promise.all([getCounter(counterId), getCount(counterId)])
       if (cancelled) return
       if (c) {
         setCounter(c)
@@ -40,19 +41,31 @@ export function useCounter(counterId: string) {
   }, [counterId])
 
   const increment = useCallback(async () => {
-    await addTap(counterId)
-    setCount(c => c + (counter?.step ?? 1))
+    const step = counter?.step ?? 1
+    const record = await addTap(counterId, step)
+    undoStack.current.push(record)
+    setCount(c => c + step)
   }, [counterId, counter])
 
   const decrement = useCallback(async () => {
-    const last = await getLastTap(counterId)
+    const step = counter?.step ?? 1
+    const record = await addTap(counterId, -step)
+    undoStack.current.push(record)
+    setCount(c => c - step)
+  }, [counterId, counter])
+
+  const undo = useCallback(async () => {
+    const last = undoStack.current.pop()
     if (!last || last.id == null) return
     await removeTap(last.id)
-    setCount(c => Math.max(0, c - (counter?.step ?? 1)))
-  }, [counterId, counter])
+    setCount(c => c - last.value)
+  }, [])
+
+  const canUndo = useCallback(() => undoStack.current.length > 0, [])
 
   const reset = useCallback(async () => {
     await clearTaps(counterId)
+    undoStack.current = []
     setCount(0)
   }, [counterId])
 
@@ -70,5 +83,5 @@ export function useCounter(counterId: string) {
     setCounter(updated)
   }, [counter])
 
-  return { count, counter, loading, increment, decrement, reset, rename, setStep }
+  return { count, counter, loading, increment, decrement, undo, canUndo, reset, rename, setStep }
 }
