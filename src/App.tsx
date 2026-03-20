@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import type { CSSProperties } from 'react'
 import { CounterView } from './CounterView'
 import { CounterList } from './CounterList'
 import { getCounters, saveCounter, deleteCounter, type Counter } from './db'
@@ -105,18 +104,14 @@ export default function App() {
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
     >
-      {view === 'counter' && prevHue !== null && (
-        <div className="edge-peek edge-peek--left" style={{ '--peek-hue': prevHue } as CSSProperties} />
-      )}
-      {view === 'counter' && nextHue !== null && (
-        <div className="edge-peek edge-peek--right" style={{ '--peek-hue': nextHue } as CSSProperties} />
-      )}
       {view === 'counter' ? (
         <CounterView
           key={activeId}
           counterId={activeId}
           colorIndex={activeIdx}
           slideDir={slideDir}
+          prevHue={prevHue}
+          nextHue={nextHue}
           onShowList={() => setView('list')}
           onCounterUpdate={onCounterUpdate}
         />

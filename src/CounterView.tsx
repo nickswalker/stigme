@@ -11,6 +11,8 @@ interface Props {
   counterId: string
   colorIndex: number
   slideDir?: 'left' | 'right' | null
+  prevHue?: number | null
+  nextHue?: number | null
   onShowList: () => void
   onCounterUpdate: (counter: Counter) => void
 }
@@ -19,7 +21,7 @@ type HistoryEntry =
   | { kind: 'tap'; rec: TapRecord }
   | { kind: 'note'; rec: NoteRecord }
 
-export function CounterView({ counterId, colorIndex, slideDir, onShowList, onCounterUpdate }: Props) {
+export function CounterView({ counterId, colorIndex, slideDir, prevHue, nextHue, onShowList, onCounterUpdate }: Props) {
   const hue = BUTTON_HUES[colorIndex % BUTTON_HUES.length]
   const { count, counter, loading, increment, decrement, undo, canUndo, reset, rename, setStep } = useCounter(counterId)
   const [editingName, setEditingName] = useState(false)
@@ -196,6 +198,12 @@ export function CounterView({ counterId, colorIndex, slideDir, onShowList, onCou
 
       {/* Count display */}
       <div className="count-area">
+        {prevHue != null && (
+          <div className="edge-peek edge-peek--left" style={{ '--peek-hue': prevHue } as React.CSSProperties} />
+        )}
+        {nextHue != null && (
+          <div className="edge-peek edge-peek--right" style={{ '--peek-hue': nextHue } as React.CSSProperties} />
+        )}
         <div className="count-display">
           {count.toLocaleString()}
         </div>

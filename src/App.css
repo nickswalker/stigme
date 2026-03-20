@@ -41,22 +41,3 @@ html, body {
   height: 100dvh;
   overflow: hidden;
 }
-
-.edge-peek {
-  position: fixed;
-  top: 0;
-  bottom: 0;
-  width: 20px;
-  pointer-events: none;
-  z-index: 50;
-}
-
-.edge-peek--left {
-  left: 0;
-  background: linear-gradient(to right, hsla(var(--peek-hue), 70%, 55%, 0.55), transparent);
-}
-
-.edge-peek--right {
-  right: 0;
-  background: linear-gradient(to left, hsla(var(--peek-hue), 70%, 55%, 0.55), transparent);
-}
