@@ -32,6 +32,7 @@ export function CounterView({ counterId, colorIndex, slideDir, prevHue, nextHue,
   const [showNote, setShowNote] = useState(false)
   const [confirmReset, setConfirmReset] = useState(false)
   const [, forceUpdate] = useState(0)
+  const [flashKey, setFlashKey] = useState(0)
   const [swipedKey, setSwipedKey] = useState<string | null>(null)
   const rowTouchRef = useRef<{ startX: number; startY: number; key: string } | null>(null)
   const tapButtonRef = useRef<HTMLButtonElement>(null)
@@ -39,6 +40,7 @@ export function CounterView({ counterId, colorIndex, slideDir, prevHue, nextHue,
   const handleTap = useCallback(async () => {
     await increment()
     forceUpdate(n => n + 1)
+    setFlashKey(k => k + 1)
     if (counter) onCounterUpdate({ ...counter })
     if ('vibrate' in navigator) navigator.vibrate(10)
   }, [increment, counter, onCounterUpdate])
@@ -303,6 +305,9 @@ export function CounterView({ counterId, colorIndex, slideDir, prevHue, nextHue,
       {showNote && (
         <NoteModal onSave={handleSaveNote} onClose={() => setShowNote(false)} />
       )}
+
+      {/* Tap flash */}
+      {flashKey > 0 && <div key={flashKey} className="tap-flash" />}
 
       {/* History modal */}
       {showHistory && (

@@ -1,3 +1,18 @@
+@keyframes tapFlash {
+  0%   { opacity: 0.45; }
+  100% { opacity: 0; }
+}
+
+.tap-flash {
+  position: fixed;
+  inset: 0;
+  background: #fff;
+  pointer-events: none;
+  z-index: 200;
+  opacity: 0;
+  animation: tapFlash 0.3s ease-out forwards;
+}
+
 @keyframes slideInFromRight {
   from { transform: translateX(35%); opacity: 0; }
   to   { transform: translateX(0);   opacity: 1; }

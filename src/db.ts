@@ -104,6 +104,11 @@ export async function getTapsForCounter(counterId: string): Promise<TapRecord[]>
   return db.getAllFromIndex('taps', 'by-counter', counterId)
 }
 
+export async function getAllTaps(): Promise<TapRecord[]> {
+  const db = await getDb()
+  return db.getAll('taps')
+}
+
 export async function clearTaps(counterId: string): Promise<void> {
   const db = await getDb()
   const tx = db.transaction('taps', 'readwrite')
