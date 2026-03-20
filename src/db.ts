@@ -19,6 +19,7 @@ export interface Counter {
   name: string
   createdAt: number
   step: number
+  order?: number
 }
 
 const DB_NAME = 'stigme'
@@ -57,7 +58,15 @@ function getDb() {
 
 export async function getCounters(): Promise<Counter[]> {
   const db = await getDb()
-  return db.getAllFromIndex('counters', 'by-created')
+  const all = await db.getAllFromIndex('counters', 'by-created')
+  return all.sort((a, b) => (a.order ?? a.createdAt) - (b.order ?? b.createdAt))
+}
+
+export async function saveCounters(counters: Counter[]): Promise<void> {
+  const db = await getDb()
+  const tx = db.transaction('counters', 'readwrite')
+  await Promise.all(counters.map(c => tx.store.put(c)))
+  await tx.done
 }
 
 export async function getCounter(id: string): Promise<Counter | undefined> {
