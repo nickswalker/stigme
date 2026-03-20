@@ -1,0 +1,344 @@
+.counter-view {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  background: var(--bg);
+  user-select: none;
+}
+
+.counter-loading {
+  height: 100dvh;
+  background: var(--bg);
+}
+
+/* ── Header ─────────────────────────────────────── */
+.counter-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  padding-top: max(16px, env(safe-area-inset-top));
+  background: var(--bg2);
+  border-bottom: 1px solid var(--border);
+  min-height: 60px;
+}
+
+.icon-btn {
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.15s, background 0.15s;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.icon-btn svg {
+  width: 22px;
+  height: 22px;
+}
+
+.icon-btn:active {
+  color: var(--text);
+  background: var(--bg3);
+}
+
+.counter-name-btn {
+  background: none;
+  border: none;
+  color: var(--text);
+  font-size: 18px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 6px 12px;
+  border-radius: 8px;
+  transition: background 0.15s;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.counter-name-btn:active {
+  background: var(--bg3);
+}
+
+.name-form {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  margin: 0 8px;
+}
+
+.name-input {
+  background: var(--bg3);
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+  color: var(--text);
+  font-size: 18px;
+  font-weight: 600;
+  padding: 6px 12px;
+  text-align: center;
+  width: 100%;
+  outline: none;
+}
+
+/* ── Settings panel ─────────────────────────────── */
+.settings-panel {
+  background: var(--bg2);
+  border-bottom: 1px solid var(--border);
+  padding: 0 20px;
+}
+
+.settings-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+  font-size: 15px;
+}
+
+.settings-row:last-child {
+  border-bottom: none;
+}
+
+.history-btn {
+  background: none;
+  border: none;
+  width: 100%;
+  cursor: pointer;
+  color: var(--text);
+}
+
+.history-btn:active {
+  color: var(--accent);
+}
+
+.chevron {
+  width: 16px;
+  height: 16px;
+  color: var(--text-dim);
+}
+
+.step-control {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.step-btn {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  color: var(--text);
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  font-size: 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  transition: background 0.15s;
+}
+
+.step-btn:active {
+  background: var(--accent-dim);
+}
+
+.step-value {
+  font-size: 18px;
+  font-weight: 600;
+  min-width: 32px;
+  text-align: center;
+}
+
+/* ── Count display ──────────────────────────────── */
+.count-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg);
+  gap: 8px;
+}
+
+.count-display {
+  font-size: clamp(72px, 22vw, 120px);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+  letter-spacing: -2px;
+  line-height: 1;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', sans-serif;
+}
+
+.step-indicator {
+  font-size: 13px;
+  color: var(--text-dim);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+/* ── Tap button ─────────────────────────────────── */
+.tap-button {
+  width: min(280px, 72vw);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  border: none;
+  background: radial-gradient(circle at 35% 35%, #8b83ff, var(--accent) 60%, #4a43cc);
+  box-shadow:
+    0 0 0 8px rgba(108, 99, 255, 0.12),
+    0 0 0 16px rgba(108, 99, 255, 0.06),
+    0 16px 48px rgba(108, 99, 255, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 32px;
+  transition: transform 0.08s ease, box-shadow 0.08s ease;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+.tap-button:active {
+  transform: scale(0.96);
+  box-shadow:
+    0 0 0 4px rgba(108, 99, 255, 0.15),
+    0 8px 24px rgba(108, 99, 255, 0.25),
+    inset 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.tap-label {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: 4px;
+  color: rgba(255, 255, 255, 0.9);
+  pointer-events: none;
+}
+
+/* ── Bottom controls ────────────────────────────── */
+.bottom-controls {
+  display: flex;
+  justify-content: center;
+  gap: 48px;
+  padding: 16px 20px;
+  padding-bottom: max(24px, env(safe-area-inset-bottom));
+  background: var(--bg2);
+  border-top: 1px solid var(--border);
+}
+
+.ctrl-btn {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--bg3);
+  color: var(--text);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, transform 0.08s;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+.ctrl-btn svg {
+  width: 22px;
+  height: 22px;
+}
+
+.ctrl-btn:active {
+  transform: scale(0.94);
+  background: var(--bg);
+}
+
+.ctrl-btn.reset.confirm {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+.reset-confirm-text {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* ── Modal ──────────────────────────────────────── */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: flex-end;
+  z-index: 100;
+}
+
+.modal {
+  background: var(--bg2);
+  border-radius: 20px 20px 0 0;
+  width: 100%;
+  max-height: 75dvh;
+  display: flex;
+  flex-direction: column;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 20px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.modal-header h2 {
+  margin: 0;
+  font-size: 18px;
+  color: var(--text);
+}
+
+.history-list {
+  overflow-y: auto;
+  flex: 1;
+  padding: 8px 0;
+}
+
+.history-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+.history-item:last-child {
+  border-bottom: none;
+}
+
+.history-index {
+  font-size: 13px;
+  color: var(--text-dim);
+  min-width: 48px;
+}
+
+.history-time {
+  font-size: 15px;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+.empty-msg {
+  text-align: center;
+  color: var(--text-dim);
+  padding: 40px 20px;
+}
