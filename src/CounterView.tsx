@@ -71,6 +71,27 @@ export function CounterView({ counterId, onShowList, onCounterUpdate }: Props) {
     setShowHistory(true)
   }, [counterId])
 
+  const downloadHistory = useCallback(async () => {
+    const taps = await getTapsForCounter(counterId)
+    const name = counter?.name ?? 'Counter'
+    const rows = [
+      ['Counter', 'Action', 'Value', 'Timestamp'].join('\t'),
+      ...taps.map(r => [
+        name,
+        r.value >= 0 ? 'increment' : 'decrement',
+        r.value,
+        new Date(r.timestamp).toISOString(),
+      ].join('\t')),
+    ]
+    const blob = new Blob([rows.join('\n')], { type: 'text/tab-separated-values' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `${name.replace(/[^a-z0-9]/gi, '_')}_history.tsv`
+    a.click()
+    URL.revokeObjectURL(url)
+  }, [counterId, counter])
+
   if (loading) return <div className="counter-loading" />
 
   return (
@@ -124,6 +145,14 @@ export function CounterView({ counterId, onShowList, onCounterUpdate }: Props) {
             View history
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="chevron">
               <polyline points="9 18 15 12 9 6" />
+            </svg>
+          </button>
+          <button className="settings-row history-btn" onClick={downloadHistory}>
+            Download history (.tsv)
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="chevron">
+              <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
+              <polyline points="7 10 12 15 17 10" />
+              <line x1="12" y1="15" x2="12" y2="3" />
             </svg>
           </button>
         </div>
