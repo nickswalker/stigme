@@ -1,9 +1,27 @@
+@keyframes slideInFromRight {
+  from { transform: translateX(35%); opacity: 0; }
+  to   { transform: translateX(0);   opacity: 1; }
+}
+
+@keyframes slideInFromLeft {
+  from { transform: translateX(-35%); opacity: 0; }
+  to   { transform: translateX(0);    opacity: 1; }
+}
+
 .counter-view {
   display: flex;
   flex-direction: column;
   height: 100dvh;
   background: var(--bg);
   user-select: none;
+}
+
+.counter-view.slide-left {
+  animation: slideInFromRight 0.26s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.counter-view.slide-right {
+  animation: slideInFromLeft 0.26s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
 .counter-loading {

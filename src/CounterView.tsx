@@ -5,11 +5,12 @@ import type { Counter } from './db'
 import { NoteModal } from './NoteModal'
 import './CounterView.css'
 
-const BUTTON_HUES = [245, 175, 25, 310, 140, 50, 200, 5]
+import { BUTTON_HUES } from './colors'
 
 interface Props {
   counterId: string
   colorIndex: number
+  slideDir?: 'left' | 'right' | null
   onShowList: () => void
   onCounterUpdate: (counter: Counter) => void
 }
@@ -18,7 +19,7 @@ type HistoryEntry =
   | { kind: 'tap'; rec: TapRecord }
   | { kind: 'note'; rec: NoteRecord }
 
-export function CounterView({ counterId, colorIndex, onShowList, onCounterUpdate }: Props) {
+export function CounterView({ counterId, colorIndex, slideDir, onShowList, onCounterUpdate }: Props) {
   const hue = BUTTON_HUES[colorIndex % BUTTON_HUES.length]
   const { count, counter, loading, increment, decrement, undo, canUndo, reset, rename, setStep } = useCounter(counterId)
   const [editingName, setEditingName] = useState(false)
@@ -130,7 +131,7 @@ export function CounterView({ counterId, colorIndex, onShowList, onCounterUpdate
   if (loading) return <div className="counter-loading" />
 
   return (
-    <div className="counter-view">
+    <div className={`counter-view${slideDir ? ` slide-${slideDir}` : ''}`}>
       {/* Header */}
       <div className="counter-header">
         <button className="icon-btn" onClick={onShowList} aria-label="Counters">

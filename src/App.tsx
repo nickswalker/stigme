@@ -1,13 +1,17 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
+import type { CSSProperties } from 'react'
 import { CounterView } from './CounterView'
 import { CounterList } from './CounterList'
 import { getCounters, saveCounter, deleteCounter, type Counter } from './db'
+import { BUTTON_HUES } from './colors'
 import './App.css'
 
 export default function App() {
   const [counters, setCounters] = useState<Counter[]>([])
   const [activeId, setActiveId] = useState<string | null>(null)
   const [view, setView] = useState<'counter' | 'list'>('counter')
+  const [slideDir, setSlideDir] = useState<'left' | 'right' | null>(null)
+  const touchStartRef = useRef<{ x: number; y: number } | null>(null)
 
   useEffect(() => {
     getCounters().then(list => {
@@ -54,9 +58,36 @@ export default function App() {
   }, [activeId])
 
   const selectCounter = useCallback((id: string) => {
+    setSlideDir(null)
     setActiveId(id)
     setView('counter')
   }, [])
+
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    if (view !== 'counter' || counters.length <= 1) return
+    if ((e.target as Element).closest?.('.modal-overlay')) return
+    const t = e.touches[0]
+    if (t.clientX < 20 || t.clientX > window.innerWidth - 20) return
+    touchStartRef.current = { x: t.clientX, y: t.clientY }
+  }, [view, counters.length])
+
+  const handleTouchEnd = useCallback((e: React.TouchEvent) => {
+    if (!touchStartRef.current || !activeId) return
+    const start = touchStartRef.current
+    touchStartRef.current = null
+    const t = e.changedTouches[0]
+    const dx = t.clientX - start.x
+    const dy = t.clientY - start.y
+    if (Math.abs(dx) < 60 || Math.abs(dx) <= Math.abs(dy)) return
+    const activeIdx = counters.findIndex(c => c.id === activeId)
+    if (dx < 0 && activeIdx < counters.length - 1) {
+      setSlideDir('left')
+      setActiveId(counters[activeIdx + 1].id)
+    } else if (dx > 0 && activeIdx > 0) {
+      setSlideDir('right')
+      setActiveId(counters[activeIdx - 1].id)
+    }
+  }, [activeId, counters])
 
   const onCounterUpdate = useCallback((updated: Counter) => {
     setCounters(prev => prev.map(c => c.id === updated.id ? updated : c))
@@ -64,13 +95,28 @@ export default function App() {
 
   if (!activeId) return null
 
+  const activeIdx = counters.findIndex(c => c.id === activeId)
+  const prevHue = activeIdx > 0 ? BUTTON_HUES[(activeIdx - 1) % BUTTON_HUES.length] : null
+  const nextHue = activeIdx < counters.length - 1 ? BUTTON_HUES[(activeIdx + 1) % BUTTON_HUES.length] : null
+
   return (
-    <div className="app">
+    <div
+      className="app"
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+    >
+      {view === 'counter' && prevHue !== null && (
+        <div className="edge-peek edge-peek--left" style={{ '--peek-hue': prevHue } as CSSProperties} />
+      )}
+      {view === 'counter' && nextHue !== null && (
+        <div className="edge-peek edge-peek--right" style={{ '--peek-hue': nextHue } as CSSProperties} />
+      )}
       {view === 'counter' ? (
         <CounterView
           key={activeId}
           counterId={activeId}
-          colorIndex={counters.findIndex(c => c.id === activeId)}
+          colorIndex={activeIdx}
+          slideDir={slideDir}
           onShowList={() => setView('list')}
           onCounterUpdate={onCounterUpdate}
         />
