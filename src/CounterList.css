@@ -100,3 +100,17 @@
 .list-delete-btn:active {
   opacity: 1;
 }
+
+.drag-handle {
+  display: flex;
+  align-items: center;
+  padding: 18px 4px 18px 16px;
+  color: var(--text-dim);
+  cursor: grab;
+  touch-action: none;
+}
+
+.drag-handle:active {
+  cursor: grabbing;
+  color: var(--text);
+}

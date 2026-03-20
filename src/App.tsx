@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { CounterView } from './CounterView'
 import { CounterList } from './CounterList'
 import { SettingsView } from './SettingsView'
-import { getCounters, saveCounter, deleteCounter, type Counter } from './db'
+import { getCounters, saveCounter, saveCounters, deleteCounter, type Counter } from './db'
 import { BUTTON_HUES } from './colors'
 import './App.css'
 
@@ -93,6 +93,11 @@ export default function App() {
     setCounters(prev => prev.map(c => c.id === updated.id ? updated : c))
   }, [])
 
+  const onReorder = useCallback(async (reordered: Counter[]) => {
+    setCounters(reordered)
+    await saveCounters(reordered)
+  }, [])
+
   if (!activeId) return null
 
   const activeIdx = counters.findIndex(c => c.id === activeId)
@@ -125,6 +130,7 @@ export default function App() {
           onDelete={removeCounter}
           onClose={() => setView('counter')}
           onShowSettings={() => setView('settings')}
+          onReorder={onReorder}
         />
       ) : (
         <SettingsView onClose={() => setView('list')} />
