@@ -1,4 +1,5 @@
 import type { Counter } from './db'
+import { BUTTON_HUES } from './colors'
 import './CounterList.css'
 
 interface Props {
@@ -29,10 +30,13 @@ export function CounterList({ counters, activeId, onSelect, onAdd, onDelete, onC
       </div>
 
       <div className="list-body">
-        {counters.map(c => (
+        {counters.map((c, i) => {
+          const hue = BUTTON_HUES[i % BUTTON_HUES.length]
+          return (
           <div
             key={c.id}
             className={`list-item ${c.id === activeId ? 'active' : ''}`}
+            style={{ '--item-hue': hue } as React.CSSProperties}
           >
             <button className="list-item-main" onClick={() => onSelect(c.id)}>
               <span className="list-item-dot" />
@@ -53,7 +57,8 @@ export function CounterList({ counters, activeId, onSelect, onAdd, onDelete, onC
               </button>
             )}
           </div>
-        ))}
+          )
+        })}
       </div>
     </div>
   )

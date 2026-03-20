@@ -59,19 +59,21 @@
 }
 
 .list-item.active .list-item-main {
-  color: var(--accent);
+  color: hsl(var(--item-hue), 75%, 68%);
 }
 
 .list-item-dot {
-  width: 10px;
-  height: 10px;
+  width: 14px;
+  height: 14px;
   border-radius: 50%;
-  background: var(--border);
+  background: hsl(var(--item-hue), 70%, 58%);
   flex-shrink: 0;
+  opacity: 0.5;
 }
 
 .list-item.active .list-item-dot {
-  background: var(--accent);
+  opacity: 1;
+  box-shadow: 0 0 0 3px hsla(var(--item-hue), 70%, 58%, 0.25);
 }
 
 .list-item-name {
