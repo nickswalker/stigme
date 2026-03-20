@@ -70,6 +70,7 @@ export default function App() {
         <CounterView
           key={activeId}
           counterId={activeId}
+          colorIndex={counters.findIndex(c => c.id === activeId)}
           onShowList={() => setView('list')}
           onCounterUpdate={onCounterUpdate}
         />

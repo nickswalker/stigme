@@ -5,8 +5,11 @@ import type { Counter } from './db'
 import { NoteModal } from './NoteModal'
 import './CounterView.css'
 
+const BUTTON_HUES = [245, 175, 25, 310, 140, 50, 200, 5]
+
 interface Props {
   counterId: string
+  colorIndex: number
   onShowList: () => void
   onCounterUpdate: (counter: Counter) => void
 }
@@ -15,7 +18,8 @@ type HistoryEntry =
   | { kind: 'tap'; rec: TapRecord }
   | { kind: 'note'; rec: NoteRecord }
 
-export function CounterView({ counterId, onShowList, onCounterUpdate }: Props) {
+export function CounterView({ counterId, colorIndex, onShowList, onCounterUpdate }: Props) {
+  const hue = BUTTON_HUES[colorIndex % BUTTON_HUES.length]
   const { count, counter, loading, increment, decrement, undo, canUndo, reset, rename, setStep } = useCounter(counterId)
   const [editingName, setEditingName] = useState(false)
   const [nameInput, setNameInput] = useState('')
@@ -203,6 +207,7 @@ export function CounterView({ counterId, onShowList, onCounterUpdate }: Props) {
       <button
         ref={tapButtonRef}
         className="tap-button"
+        style={{ '--btn-hue': hue } as React.CSSProperties}
         onClick={handleTap}
         aria-label="Increment counter"
       >
