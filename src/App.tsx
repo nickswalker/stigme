@@ -7,13 +7,14 @@ import { BUTTON_HUES } from './colors'
 import './App.css'
 
 function startVT(dir: string, fn: () => void) {
-  document.documentElement.dataset.vt = dir
+  const { documentElement } = document
+  documentElement.dataset.vt = dir
   if ('startViewTransition' in document) {
-    const t = (document as any).startViewTransition(() => { flushSync(fn) })
-    t.finished.then(() => { delete document.documentElement.dataset.vt })
+    ;(document as any).startViewTransition(() => { flushSync(fn) })
+      .finished.then(() => { delete documentElement.dataset.vt })
   } else {
     fn()
-    delete document.documentElement.dataset.vt
+    delete documentElement.dataset.vt
   }
 }
 
