@@ -285,10 +285,10 @@ export function CounterView({ counterId, colorIndex, slideDir, prevHue, nextHue,
 
         <button className="ctrl-btn note" onClick={() => setShowNote(true)} aria-label="Add note">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <rect x="9" y="2" width="6" height="11" rx="3" />
-            <path d="M5 10a7 7 0 0014 0" />
-            <line x1="12" y1="19" x2="12" y2="22" />
-            <line x1="9" y1="22" x2="15" y2="22" />
+            <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+            <polyline points="14 2 14 8 20 8" />
+            <line x1="16" y1="13" x2="8" y2="13" />
+            <line x1="16" y1="17" x2="8" y2="17" />
           </svg>
         </button>
 
@@ -355,10 +355,10 @@ export function CounterView({ counterId, colorIndex, slideDir, prevHue, nextHue,
                         <div className={`history-item history-item--note${swiped ? ' swiped' : ''}`}>
                           <span className="history-note-icon">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="14" height="14">
-                              <rect x="9" y="2" width="6" height="11" rx="3" />
-                              <path d="M5 10a7 7 0 0014 0" />
-                              <line x1="12" y1="19" x2="12" y2="22" />
-                              <line x1="9" y1="22" x2="15" y2="22" />
+                              <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+                              <polyline points="14 2 14 8 20 8" />
+                              <line x1="16" y1="13" x2="8" y2="13" />
+                              <line x1="16" y1="17" x2="8" y2="17" />
                             </svg>
                           </span>
                           <span className="history-note-text">{entry.rec.text}</span>
