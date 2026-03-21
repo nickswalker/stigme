@@ -36,6 +36,8 @@ export function CounterView({ counterId, colorIndex, slideDir, prevHue, nextHue,
   const [swipedKey, setSwipedKey] = useState<string | null>(null)
   const rowTouchRef = useRef<{ startX: number; startY: number; key: string } | null>(null)
   const tapButtonRef = useRef<HTMLButtonElement>(null)
+  const [streak, setStreak] = useState(0)
+  const streakTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const handleTap = useCallback(async () => {
     await increment()
@@ -43,6 +45,10 @@ export function CounterView({ counterId, colorIndex, slideDir, prevHue, nextHue,
     setFlashKey(k => k + 1)
     if (counter) onCounterUpdate({ ...counter })
     if ('vibrate' in navigator) navigator.vibrate(10)
+
+    setStreak(s => s + 1)
+    if (streakTimer.current) clearTimeout(streakTimer.current)
+    streakTimer.current = setTimeout(() => setStreak(0), 1500)
   }, [increment, counter, onCounterUpdate])
 
   const handleDecrement = useCallback(async () => {
@@ -254,6 +260,7 @@ export function CounterView({ counterId, colorIndex, slideDir, prevHue, nextHue,
         aria-label="Increment counter"
       >
         <span className="tap-label">TAP</span>
+        {streak >= 2 && <span className="streak-label">{streak}</span>}
       </button>
 
       {/* Bottom controls */}

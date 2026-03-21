@@ -254,6 +254,7 @@
     inset 0 1px 0 rgba(255, 255, 255, 0.2);
   cursor: pointer;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   margin: 0 auto 32px;
@@ -276,6 +277,20 @@
   letter-spacing: 4px;
   color: rgba(255, 255, 255, 0.9);
   pointer-events: none;
+}
+
+.streak-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.55);
+  pointer-events: none;
+  margin-top: 4px;
+  animation: streak-in 0.15s ease-out;
+}
+
+@keyframes streak-in {
+  from { opacity: 0; transform: scale(0.7); }
+  to   { opacity: 1; transform: scale(1); }
 }
 
 /* ── Bottom controls ────────────────────────────── */
