@@ -41,3 +41,56 @@ html, body {
   height: 100dvh;
   overflow: hidden;
 }
+
+/* ── View Transitions ───────────────────────────── */
+@keyframes vt-slide-out-left {
+  to { transform: translateX(-35%); opacity: 0; }
+}
+@keyframes vt-slide-in-from-right {
+  from { transform: translateX(35%); opacity: 0; }
+}
+@keyframes vt-slide-out-right {
+  to { transform: translateX(35%); opacity: 0; }
+}
+@keyframes vt-slide-in-from-left {
+  from { transform: translateX(-35%); opacity: 0; }
+}
+
+/* Suppress default crossfade when we're doing a directional slide */
+html[data-vt]::view-transition-old(root),
+html[data-vt]::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+/* Counter → list: counter slides right, list comes from left */
+html[data-vt="to-list"]::view-transition-old(root) {
+  animation: vt-slide-out-right 0.22s ease;
+}
+html[data-vt="to-list"]::view-transition-new(root) {
+  animation: vt-slide-in-from-left 0.22s ease;
+}
+
+/* List → counter: list slides left, counter comes from right */
+html[data-vt="to-counter"]::view-transition-old(root) {
+  animation: vt-slide-out-left 0.22s ease;
+}
+html[data-vt="to-counter"]::view-transition-new(root) {
+  animation: vt-slide-in-from-right 0.22s ease;
+}
+
+/* Swipe left (next counter): current slides left, next comes from right */
+html[data-vt="swipe-left"]::view-transition-old(root) {
+  animation: vt-slide-out-left 0.16s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+html[data-vt="swipe-left"]::view-transition-new(root) {
+  animation: vt-slide-in-from-right 0.16s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+/* Swipe right (prev counter): current slides right, prev comes from left */
+html[data-vt="swipe-right"]::view-transition-old(root) {
+  animation: vt-slide-out-right 0.16s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+html[data-vt="swipe-right"]::view-transition-new(root) {
+  animation: vt-slide-in-from-left 0.16s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
