@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { CounterView } from './CounterView'
 import { CounterList } from './CounterList'
-import { SettingsView } from './SettingsView'
 import { getCounters, saveCounter, saveCounters, deleteCounter, type Counter } from './db'
 import { BUTTON_HUES } from './colors'
 import './App.css'
@@ -9,7 +8,7 @@ import './App.css'
 export default function App() {
   const [counters, setCounters] = useState<Counter[]>([])
   const [activeId, setActiveId] = useState<string | null>(null)
-  const [view, setView] = useState<'counter' | 'list' | 'settings'>('counter')
+  const [view, setView] = useState<'counter' | 'list'>('counter')
   const [slideDir, setSlideDir] = useState<'left' | 'right' | null>(null)
   const touchStartRef = useRef<{ x: number; y: number } | null>(null)
 
@@ -121,7 +120,7 @@ export default function App() {
           onShowList={() => setView('list')}
           onCounterUpdate={onCounterUpdate}
         />
-      ) : view === 'list' ? (
+      ) : (
         <CounterList
           counters={counters}
           activeId={activeId}
@@ -129,11 +128,8 @@ export default function App() {
           onAdd={addCounter}
           onDelete={removeCounter}
           onClose={() => setView('counter')}
-          onShowSettings={() => setView('settings')}
           onReorder={onReorder}
         />
-      ) : (
-        <SettingsView onClose={() => setView('list')} />
       )}
     </div>
   )
