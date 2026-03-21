@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import {
   DndContext,
   closestCenter,
@@ -15,7 +15,8 @@ import {
   arrayMove,
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import type { Counter } from './db'
+import { getCounters, getAllTaps, getNotes, type Counter } from './db'
+import { getPreferKeyboardDictation, PREF_KEY } from './SettingsView'
 import { BUTTON_HUES } from './colors'
 import './CounterList.css'
 
@@ -26,7 +27,6 @@ interface Props {
   onAdd: () => void
   onDelete: (id: string) => void
   onClose: () => void
-  onShowSettings: () => void
   onReorder: (counters: Counter[]) => void
 }
 
@@ -87,8 +87,9 @@ function SortableRow({ counter, colorIndex, activeId, reordering, showDelete, on
   )
 }
 
-export function CounterList({ counters, activeId, onSelect, onAdd, onDelete, onClose, onShowSettings, onReorder }: Props) {
+export function CounterList({ counters, activeId, onSelect, onAdd, onDelete, onClose, onReorder }: Props) {
   const [reordering, setReordering] = useState(false)
+  const [keyboardDictation, setKeyboardDictation] = useState(getPreferKeyboardDictation)
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -105,6 +106,38 @@ export function CounterList({ counters, activeId, onSelect, onAdd, onDelete, onC
     const reordered = arrayMove(counters, oldIndex, newIndex).map((c, i) => ({ ...c, order: i }))
     onReorder(reordered)
   }
+
+  function toggleKeyboardDictation() {
+    const next = !keyboardDictation
+    setKeyboardDictation(next)
+    localStorage.setItem(PREF_KEY, String(next))
+  }
+
+  const downloadAllHistory = useCallback(async () => {
+    const [allCounters, taps, notes] = await Promise.all([getCounters(), getAllTaps(), getNotes()])
+    const counterMap = new Map(allCounters.map(c => [c.id, c.name]))
+    const tapRows = taps.map(r => ({
+      ts: r.timestamp,
+      cols: [counterMap.get(r.counterId) ?? r.counterId, r.value >= 0 ? 'increment' : 'decrement', String(r.value), ''],
+    }))
+    const noteRows = notes.map(n => ({
+      ts: n.timestamp,
+      cols: [n.counterName, 'note', '', n.text.replace(/\t|\n/g, ' ')],
+    }))
+    const rows = [
+      ['Counter', 'Action', 'Value', 'Note', 'Timestamp'].join('\t'),
+      ...[...tapRows, ...noteRows]
+        .sort((a, b) => a.ts - b.ts)
+        .map(r => [...r.cols, new Date(r.ts).toISOString()].join('\t')),
+    ]
+    const blob = new Blob([rows.join('\n')], { type: 'text/tab-separated-values' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'all_history.tsv'
+    a.click()
+    URL.revokeObjectURL(url)
+  }, [])
 
   return (
     <div className="counter-list-view">
@@ -138,35 +171,56 @@ export function CounterList({ counters, activeId, onSelect, onAdd, onDelete, onC
                   </svg>
                 </button>
               )}
-              <button className="icon-btn" onClick={onShowSettings} aria-label="Settings">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <circle cx="12" cy="12" r="3" />
-                  <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z" />
-                </svg>
-              </button>
             </>
           )}
         </div>
       </div>
 
-      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-        <SortableContext items={counters.map(c => c.id)} strategy={verticalListSortingStrategy}>
-          <div className="list-body">
-            {counters.map((c, i) => (
-              <SortableRow
-                key={c.id}
-                counter={c}
-                colorIndex={i}
-                activeId={activeId}
-                reordering={reordering}
-                showDelete={!reordering && counters.length > 1}
-                onSelect={onSelect}
-                onDelete={onDelete}
-              />
-            ))}
-          </div>
-        </SortableContext>
-      </DndContext>
+      <div className="list-scroll">
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          <SortableContext items={counters.map(c => c.id)} strategy={verticalListSortingStrategy}>
+            <div className="list-body">
+              {counters.map((c, i) => (
+                <SortableRow
+                  key={c.id}
+                  counter={c}
+                  colorIndex={i}
+                  activeId={activeId}
+                  reordering={reordering}
+                  showDelete={!reordering && counters.length > 1}
+                  onSelect={onSelect}
+                  onDelete={onDelete}
+                />
+              ))}
+            </div>
+          </SortableContext>
+        </DndContext>
+
+        <div className="list-settings">
+          <div className="list-settings-label">Data</div>
+          <button className="settings-action-row" onClick={downloadAllHistory}>
+            <span>Download all history (.tsv)</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="18" height="18">
+              <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
+              <polyline points="7 10 12 15 17 10" />
+              <line x1="12" y1="15" x2="12" y2="3" />
+            </svg>
+          </button>
+
+          <div className="list-settings-label" style={{ marginTop: 24 }}>Notes</div>
+          <button className="settings-toggle-row" onClick={toggleKeyboardDictation}>
+            <div className="settings-toggle-text">
+              <span className="settings-toggle-title">Use keyboard dictation</span>
+              <span className="settings-toggle-desc">
+                Opens the keyboard instead of auto-starting Web Speech. Tap the mic on your keyboard to dictate.
+              </span>
+            </div>
+            <div className={`toggle-switch ${keyboardDictation ? 'on' : ''}`} aria-hidden="true">
+              <div className="toggle-thumb" />
+            </div>
+          </button>
+        </div>
+      </div>
     </div>
   )
 }
