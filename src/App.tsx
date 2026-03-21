@@ -116,6 +116,14 @@ export default function App() {
     await saveCounters(reordered)
   }, [])
 
+  const onRename = useCallback(async (id: string, name: string) => {
+    const counter = counters.find(c => c.id === id)
+    if (!counter) return
+    const updated = { ...counter, name }
+    await saveCounter(updated)
+    setCounters(prev => prev.map(c => c.id === id ? updated : c))
+  }, [counters])
+
   if (!activeId) return null
 
   const activeIdx = counters.findIndex(c => c.id === activeId)
@@ -150,6 +158,7 @@ export default function App() {
           onDelete={removeCounter}
           onClose={() => startVT('to-counter', () => setView('counter'))}
           onReorder={onReorder}
+          onRename={onRename}
         />
       )}
     </div>

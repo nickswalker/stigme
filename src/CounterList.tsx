@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useRef } from 'react'
 import {
   DndContext,
   closestCenter,
@@ -28,21 +28,26 @@ interface Props {
   onDelete: (id: string) => void
   onClose: () => void
   onReorder: (counters: Counter[]) => void
+  onRename: (id: string, name: string) => void
 }
 
 interface RowProps {
   counter: Counter
   colorIndex: number
   activeId: string
-  reordering: boolean
+  editing: boolean
   showDelete: boolean
   onSelect: (id: string) => void
   onDelete: (id: string) => void
+  onRename: (id: string, name: string) => void
 }
 
-function SortableRow({ counter, colorIndex, activeId, reordering, showDelete, onSelect, onDelete }: RowProps) {
+function SortableRow({ counter, colorIndex, activeId, editing, showDelete, onSelect, onDelete, onRename }: RowProps) {
   const hue = BUTTON_HUES[colorIndex % BUTTON_HUES.length]
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: counter.id })
+  const [isRenaming, setIsRenaming] = useState(false)
+  const [nameInput, setNameInput] = useState('')
+  const inputRef = useRef<HTMLInputElement>(null)
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -51,13 +56,24 @@ function SortableRow({ counter, colorIndex, activeId, reordering, showDelete, on
     '--item-hue': hue,
   } as React.CSSProperties
 
+  function startRename() {
+    setNameInput(counter.name)
+    setIsRenaming(true)
+  }
+
+  function submitRename() {
+    setIsRenaming(false)
+    const trimmed = nameInput.trim()
+    if (trimmed && trimmed !== counter.name) onRename(counter.id, trimmed)
+  }
+
   return (
     <div
       ref={setNodeRef}
       style={style}
       className={`list-item ${counter.id === activeId ? 'active' : ''}`}
     >
-      {reordering && (
+      {editing && (
         <span className="drag-handle" {...attributes} {...listeners} aria-label="Drag to reorder">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="20" height="20">
             <line x1="3" y1="8" x2="21" y2="8" />
@@ -65,10 +81,26 @@ function SortableRow({ counter, colorIndex, activeId, reordering, showDelete, on
           </svg>
         </span>
       )}
-      <button className="list-item-main" onClick={() => !reordering && onSelect(counter.id)}>
-        <span className="list-item-dot" />
-        <span className="list-item-name">{counter.name}</span>
-      </button>
+      {editing && isRenaming ? (
+        <div className="list-item-main">
+          <span className="list-item-dot" />
+          <form onSubmit={e => { e.preventDefault(); submitRename() }} style={{ flex: 1 }}>
+            <input
+              ref={inputRef}
+              className="list-item-rename"
+              value={nameInput}
+              onChange={e => setNameInput(e.target.value)}
+              onBlur={submitRename}
+              autoFocus
+            />
+          </form>
+        </div>
+      ) : (
+        <button className="list-item-main" onClick={() => editing ? startRename() : onSelect(counter.id)}>
+          <span className="list-item-dot" />
+          <span className="list-item-name">{counter.name}</span>
+        </button>
+      )}
       {showDelete && (
         <button
           className="list-delete-btn"
@@ -87,8 +119,8 @@ function SortableRow({ counter, colorIndex, activeId, reordering, showDelete, on
   )
 }
 
-export function CounterList({ counters, activeId, onSelect, onAdd, onDelete, onClose, onReorder }: Props) {
-  const [reordering, setReordering] = useState(false)
+export function CounterList({ counters, activeId, onSelect, onAdd, onDelete, onClose, onReorder, onRename }: Props) {
+  const [editing, setEditing] = useState(false)
   const [keyboardDictation, setKeyboardDictation] = useState(getPreferKeyboardDictation)
 
   const sensors = useSensors(
@@ -142,8 +174,8 @@ export function CounterList({ counters, activeId, onSelect, onAdd, onDelete, onC
   return (
     <div className="counter-list-view">
       <div className="list-header">
-        <button className="icon-btn" onClick={reordering ? () => setReordering(false) : onClose} aria-label={reordering ? 'Done' : 'Close'}>
-          {reordering ? (
+        <button className="icon-btn" onClick={editing ? () => setEditing(false) : onClose} aria-label={editing ? 'Done' : 'Close'}>
+          {editing ? (
             <span style={{ fontSize: 15, fontWeight: 600, color: 'var(--accent)', padding: '0 4px' }}>Done</span>
           ) : (
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -154,7 +186,7 @@ export function CounterList({ counters, activeId, onSelect, onAdd, onDelete, onC
         </button>
         <h1 className="list-title">Counters</h1>
         <div style={{ display: 'flex', gap: 4 }}>
-          {!reordering && (
+          {!editing && (
             <>
               <button className="icon-btn" onClick={onAdd} aria-label="Add counter">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -162,16 +194,11 @@ export function CounterList({ counters, activeId, onSelect, onAdd, onDelete, onC
                   <line x1="5" y1="12" x2="19" y2="12" />
                 </svg>
               </button>
-              {counters.length > 1 && (
-                <button className="icon-btn" onClick={() => setReordering(true)} aria-label="Reorder">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <line x1="3" y1="6" x2="21" y2="6" />
-                    <line x1="3" y1="12" x2="21" y2="12" />
-                    <line x1="3" y1="18" x2="21" y2="18" />
-                    <polyline points="17 3 21 6 17 9" />
-                  </svg>
-                </button>
-              )}
+              <button className="icon-btn" onClick={() => setEditing(true)} aria-label="Edit counters">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M17 3a2.828 2.828 0 114 4L7.5 20.5 2 22l1.5-5.5L17 3z" />
+                </svg>
+              </button>
             </>
           )}
         </div>
@@ -187,10 +214,11 @@ export function CounterList({ counters, activeId, onSelect, onAdd, onDelete, onC
                   counter={c}
                   colorIndex={c.colorIndex ?? i}
                   activeId={activeId}
-                  reordering={reordering}
-                  showDelete={!reordering && counters.length > 1}
+                  editing={editing}
+                  showDelete={editing && counters.length > 1}
                   onSelect={onSelect}
                   onDelete={onDelete}
+                  onRename={onRename}
                 />
               ))}
             </div>
