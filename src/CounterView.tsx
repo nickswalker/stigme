@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react'
 import { useCounter } from './useCounter'
 import { getTapsForCounter, getNotes, addNote, deleteNote, type TapRecord, type NoteRecord } from './db'
 import type { Counter } from './db'
@@ -39,8 +39,58 @@ export function CounterView({ counterId, colorIndex, slideDir, prevHue, nextHue,
   const [streak, setStreak] = useState(0)
   const streakTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
+  const lastTapAtRef = useRef<number | null>(null)
+  const lastElapsedUpdateRef = useRef<number>(0)
+  const [elapsed, setElapsed] = useState<number | null>(null)
+
+  // Load last tap timestamp on mount
+  useEffect(() => {
+    if (loading) return
+    getTapsForCounter(counterId).then(taps => {
+      if (taps.length > 0) {
+        lastTapAtRef.current = Math.max(...taps.map(t => t.timestamp))
+        lastElapsedUpdateRef.current = 0
+      }
+    })
+  }, [counterId, loading])
+
+  // rAF ticker: updates elapsed at 100ms precision when <1min, 1s otherwise
+  useEffect(() => {
+    let rafId: number
+    function tick() {
+      const now = Date.now()
+      const last = lastTapAtRef.current
+      if (last != null) {
+        const ms = now - last
+        const interval = ms < 60_000 ? 100 : 1_000
+        if (now - lastElapsedUpdateRef.current >= interval) {
+          setElapsed(ms)
+          lastElapsedUpdateRef.current = now
+        }
+      }
+      rafId = requestAnimationFrame(tick)
+    }
+    rafId = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(rafId)
+  }, [])
+
+  const refreshLastTapAt = useCallback(async () => {
+    const taps = await getTapsForCounter(counterId)
+    if (taps.length > 0) {
+      lastTapAtRef.current = Math.max(...taps.map(t => t.timestamp))
+      lastElapsedUpdateRef.current = 0
+    } else {
+      lastTapAtRef.current = null
+      setElapsed(null)
+    }
+  }, [counterId])
+
   const handleTap = useCallback(async () => {
     await increment()
+    const now = Date.now()
+    lastTapAtRef.current = now
+    lastElapsedUpdateRef.current = now
+    setElapsed(0)
     forceUpdate(n => n + 1)
     setFlashKey(k => k + 1)
     if (counter) onCounterUpdate({ ...counter })
@@ -53,6 +103,10 @@ export function CounterView({ counterId, colorIndex, slideDir, prevHue, nextHue,
 
   const handleDecrement = useCallback(async () => {
     await decrement()
+    const now = Date.now()
+    lastTapAtRef.current = now
+    lastElapsedUpdateRef.current = now
+    setElapsed(0)
     forceUpdate(n => n + 1)
     if (counter) onCounterUpdate({ ...counter })
   }, [decrement, counter, onCounterUpdate])
@@ -60,7 +114,8 @@ export function CounterView({ counterId, colorIndex, slideDir, prevHue, nextHue,
   const handleUndo = useCallback(async () => {
     await undo()
     forceUpdate(n => n + 1)
-  }, [undo])
+    await refreshLastTapAt()
+  }, [undo, refreshLastTapAt])
 
   const handleReset = useCallback(async () => {
     if (!confirmReset) {
@@ -70,6 +125,8 @@ export function CounterView({ counterId, colorIndex, slideDir, prevHue, nextHue,
     }
     await reset()
     setConfirmReset(false)
+    lastTapAtRef.current = null
+    setElapsed(null)
     forceUpdate(n => n + 1)
     if (counter) onCounterUpdate({ ...counter })
   }, [reset, confirmReset, counter, onCounterUpdate])
@@ -113,12 +170,13 @@ export function CounterView({ counterId, colorIndex, slideDir, prevHue, nextHue,
     if (entry.kind === 'tap' && entry.rec.id != null) {
       await deleteTap(entry.rec.id, entry.rec.value)
       forceUpdate(n => n + 1)
+      await refreshLastTapAt()
     } else if (entry.kind === 'note' && entry.rec.id != null) {
       await deleteNote(entry.rec.id)
     }
     setHistory(prev => prev.filter(e => e !== entry))
     setSwipedKey(null)
-  }, [deleteTap])
+  }, [deleteTap, refreshLastTapAt])
 
   function onRowTouchStart(e: React.TouchEvent, key: string) {
     const t = e.touches[0]
@@ -246,6 +304,9 @@ export function CounterView({ counterId, colorIndex, slideDir, prevHue, nextHue,
         <div className="count-display">
           {count.toLocaleString()}
         </div>
+        {elapsed != null && (
+          <div className="elapsed-display">{formatElapsed(elapsed)}</div>
+        )}
         {counter?.step && counter.step > 1 && (
           <div className="step-indicator">step: {counter.step}</div>
         )}
@@ -382,6 +443,26 @@ export function CounterView({ counterId, colorIndex, slideDir, prevHue, nextHue,
       )}
     </div>
   )
+}
+
+function formatElapsed(ms: number): string {
+  const totalS = ms / 1000
+  const ss = Math.floor(totalS)
+  const mm = Math.floor(ss / 60)
+  const hh = Math.floor(mm / 60)
+  const dd = Math.floor(hh / 24)
+
+  if (mm === 0) {
+    const tenths = Math.floor((ms % 1000) / 100)
+    return `${ss}.${tenths}`
+  }
+  if (hh === 0) {
+    return `${mm}:${String(ss % 60).padStart(2, '0')}`
+  }
+  if (dd === 0) {
+    return `${hh}:${String(mm % 60).padStart(2, '0')}:${String(ss % 60).padStart(2, '0')}`
+  }
+  return `${dd}:${String(hh % 24).padStart(2, '0')}:${String(mm % 60).padStart(2, '0')}:${String(ss % 60).padStart(2, '0')}`
 }
 
 function formatTimestamp(ts: number): string {

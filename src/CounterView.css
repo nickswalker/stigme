@@ -239,6 +239,15 @@
   text-transform: uppercase;
 }
 
+.elapsed-display {
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-dim);
+  opacity: 0.55;
+  letter-spacing: 0.5px;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', sans-serif;
+}
+
 /* ── Tap button ─────────────────────────────────── */
 .tap-button {
   --btn-hue: 245;
