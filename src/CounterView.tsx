@@ -10,7 +10,6 @@ import { BUTTON_HUES } from './colors'
 interface Props {
   counterId: string
   colorIndex: number
-  slideDir?: 'left' | 'right' | null
   prevHue?: number | null
   nextHue?: number | null
   onShowList: () => void
@@ -21,7 +20,7 @@ type HistoryEntry =
   | { kind: 'tap'; rec: TapRecord }
   | { kind: 'note'; rec: NoteRecord }
 
-export function CounterView({ counterId, colorIndex, slideDir, prevHue, nextHue, onShowList, onCounterUpdate }: Props) {
+export function CounterView({ counterId, colorIndex, prevHue, nextHue, onShowList, onCounterUpdate }: Props) {
   const hue = BUTTON_HUES[colorIndex % BUTTON_HUES.length]
   const { count, counter, loading, increment, decrement, undo, canUndo, deleteTap, reset, rename, setStep } = useCounter(counterId)
   const [editingName, setEditingName] = useState(false)
@@ -230,7 +229,7 @@ export function CounterView({ counterId, colorIndex, slideDir, prevHue, nextHue,
   if (loading) return <div className="counter-loading" />
 
   return (
-    <div className={`counter-view${slideDir ? ` slide-${slideDir}` : ''}`}>
+    <div className="counter-view">
       {/* Header */}
       <div className="counter-header">
         <button className="icon-btn" onClick={onShowList} aria-label="Counters">

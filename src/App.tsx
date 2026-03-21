@@ -1,15 +1,27 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
+import { flushSync } from 'react-dom'
 import { CounterView } from './CounterView'
 import { CounterList } from './CounterList'
 import { getCounters, saveCounter, saveCounters, deleteCounter, type Counter } from './db'
 import { BUTTON_HUES } from './colors'
 import './App.css'
 
+function startVT(dir: string, fn: () => void) {
+  const { documentElement } = document
+  documentElement.dataset.vt = dir
+  if ('startViewTransition' in document) {
+    ;(document as any).startViewTransition(() => { flushSync(fn) })
+      .finished.then(() => { delete documentElement.dataset.vt })
+  } else {
+    fn()
+    delete documentElement.dataset.vt
+  }
+}
+
 export default function App() {
   const [counters, setCounters] = useState<Counter[]>([])
   const [activeId, setActiveId] = useState<string | null>(null)
   const [view, setView] = useState<'counter' | 'list'>('counter')
-  const [slideDir, setSlideDir] = useState<'left' | 'right' | null>(null)
   const touchStartRef = useRef<{ x: number; y: number } | null>(null)
 
   useEffect(() => {
@@ -41,8 +53,10 @@ export default function App() {
     }
     await saveCounter(counter)
     setCounters(prev => [...prev, counter])
-    setActiveId(counter.id)
-    setView('counter')
+    startVT('to-counter', () => {
+      setActiveId(counter.id)
+      setView('counter')
+    })
   }, [counters.length])
 
   const removeCounter = useCallback(async (id: string) => {
@@ -57,9 +71,10 @@ export default function App() {
   }, [activeId])
 
   const selectCounter = useCallback((id: string) => {
-    setSlideDir(null)
-    setActiveId(id)
-    setView('counter')
+    startVT('to-counter', () => {
+      setActiveId(id)
+      setView('counter')
+    })
   }, [])
 
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
@@ -80,11 +95,9 @@ export default function App() {
     if (Math.abs(dx) < 60 || Math.abs(dx) <= Math.abs(dy)) return
     const activeIdx = counters.findIndex(c => c.id === activeId)
     if (dx < 0 && activeIdx < counters.length - 1) {
-      setSlideDir('left')
-      setActiveId(counters[activeIdx + 1].id)
+      startVT('swipe-left', () => setActiveId(counters[activeIdx + 1].id))
     } else if (dx > 0 && activeIdx > 0) {
-      setSlideDir('right')
-      setActiveId(counters[activeIdx - 1].id)
+      startVT('swipe-right', () => setActiveId(counters[activeIdx - 1].id))
     }
   }, [activeId, counters])
 
@@ -114,10 +127,9 @@ export default function App() {
           key={activeId}
           counterId={activeId}
           colorIndex={activeIdx}
-          slideDir={slideDir}
           prevHue={prevHue}
           nextHue={nextHue}
-          onShowList={() => setView('list')}
+          onShowList={() => startVT('to-list', () => setView('list'))}
           onCounterUpdate={onCounterUpdate}
         />
       ) : (
@@ -127,7 +139,7 @@ export default function App() {
           onSelect={selectCounter}
           onAdd={addCounter}
           onDelete={removeCounter}
-          onClose={() => setView('counter')}
+          onClose={() => startVT('to-counter', () => setView('counter'))}
           onReorder={onReorder}
         />
       )}
