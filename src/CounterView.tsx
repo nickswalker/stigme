@@ -3,6 +3,7 @@ import { useCounter } from './useCounter'
 import { getTapsForCounter, getNotes, addNote, deleteNote, type TapRecord, type NoteRecord } from './db'
 import type { Counter } from './db'
 import { NoteModal } from './NoteModal'
+import { playTap } from './tapSound'
 import './CounterView.css'
 
 import { BUTTON_HUES } from './colors'
@@ -85,6 +86,7 @@ export function CounterView({ counterId, colorIndex, prevHue, nextHue, onShowLis
   }, [counterId])
 
   const handleTap = useCallback(async () => {
+    playTap(colorIndex, 1)
     await increment()
     const now = Date.now()
     lastTapAtRef.current = now
@@ -101,6 +103,7 @@ export function CounterView({ counterId, colorIndex, prevHue, nextHue, onShowLis
   }, [increment, counter, onCounterUpdate])
 
   const handleDecrement = useCallback(async () => {
+    playTap(colorIndex, -1)
     await decrement()
     const now = Date.now()
     lastTapAtRef.current = now
