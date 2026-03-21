@@ -32,6 +32,7 @@ export default function App() {
           name: 'Counter',
           createdAt: Date.now(),
           step: 1,
+          colorIndex: 0,
         }
         saveCounter(defaultCounter).then(() => {
           setCounters([defaultCounter])
@@ -45,11 +46,16 @@ export default function App() {
   }, [])
 
   const addCounter = useCallback(async () => {
+    const lastColorIndex = counters.length > 0
+      ? (counters[counters.length - 1].colorIndex ?? 0)
+      : -1
+    const colorIndex = (lastColorIndex + 1) % BUTTON_HUES.length
     const counter: Counter = {
       id: crypto.randomUUID(),
       name: `Counter ${counters.length + 1}`,
       createdAt: Date.now(),
       step: 1,
+      colorIndex,
     }
     await saveCounter(counter)
     setCounters(prev => [...prev, counter])
@@ -113,8 +119,11 @@ export default function App() {
   if (!activeId) return null
 
   const activeIdx = counters.findIndex(c => c.id === activeId)
-  const prevHue = activeIdx > 0 ? BUTTON_HUES[(activeIdx - 1) % BUTTON_HUES.length] : null
-  const nextHue = activeIdx < counters.length - 1 ? BUTTON_HUES[(activeIdx + 1) % BUTTON_HUES.length] : null
+  const activeColorIndex = counters[activeIdx]?.colorIndex ?? activeIdx
+  const prevCounter = activeIdx > 0 ? counters[activeIdx - 1] : null
+  const nextCounter = activeIdx < counters.length - 1 ? counters[activeIdx + 1] : null
+  const prevHue = prevCounter ? BUTTON_HUES[(prevCounter.colorIndex ?? (activeIdx - 1)) % BUTTON_HUES.length] : null
+  const nextHue = nextCounter ? BUTTON_HUES[(nextCounter.colorIndex ?? (activeIdx + 1)) % BUTTON_HUES.length] : null
 
   return (
     <div
@@ -126,7 +135,7 @@ export default function App() {
         <CounterView
           key={activeId}
           counterId={activeId}
-          colorIndex={activeIdx}
+          colorIndex={activeColorIndex}
           prevHue={prevHue}
           nextHue={nextHue}
           onShowList={() => startVT('to-list', () => setView('list'))}

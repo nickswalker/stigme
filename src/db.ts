@@ -20,6 +20,7 @@ export interface Counter {
   createdAt: number
   step: number
   order?: number
+  colorIndex?: number
 }
 
 const DB_NAME = 'stigme'

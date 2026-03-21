@@ -7,10 +7,13 @@ function getCtx(): AudioContext {
   return ctx
 }
 
-// Each counter index gets a distinct whole-tone pitch (2 semitones per step),
-// cycling through an octave. Range: 880–1760 Hz (A5–A6).
+// Major scale semitone offsets — 8 distinct pitches, one per hue, within one octave.
+// Range: 880–1760 Hz (A5–A6).
+const SCALE_SEMITONES = [0, 2, 4, 5, 7, 9, 11, 12]
+
 function indexToFreq(colorIndex: number): number {
-  return 880 * Math.pow(2, ((colorIndex * 2) % 12) / 12)
+  const semitones = SCALE_SEMITONES[colorIndex % SCALE_SEMITONES.length]
+  return 880 * Math.pow(2, semitones / 12)
 }
 
 export function playTap(colorIndex: number, direction: 1 | -1 = 1): void {

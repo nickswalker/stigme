@@ -184,7 +184,7 @@ export function CounterList({ counters, activeId, onSelect, onAdd, onDelete, onC
                 <SortableRow
                   key={c.id}
                   counter={c}
-                  colorIndex={i}
+                  colorIndex={c.colorIndex ?? i}
                   activeId={activeId}
                   reordering={reordering}
                   showDelete={!reordering && counters.length > 1}
