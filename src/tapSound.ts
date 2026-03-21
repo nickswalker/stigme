@@ -28,9 +28,7 @@ export function playTap(colorIndex: number, direction: 1 | -1 = 1): void {
     gain.connect(ctx.destination)
 
     osc.type = 'triangle'
-    // Brief pitch-drop transient gives a "thock" quality
-    osc.frequency.setValueAtTime(freq * 1.4, now)
-    osc.frequency.exponentialRampToValueAtTime(freq, now + 0.012)
+    osc.frequency.setValueAtTime(freq, now)
 
     gain.gain.setValueAtTime(0.22, now)
     gain.gain.exponentialRampToValueAtTime(0.001, now + 0.045)
