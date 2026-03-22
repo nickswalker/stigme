@@ -16,7 +16,7 @@ import {
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { getCounters, getAllTaps, getNotes, type Counter } from './db'
-import { getPreferKeyboardDictation, PREF_KEY } from './SettingsView'
+import { getPreferWebSpeech, PREF_KEY } from './SettingsView'
 import { BUTTON_HUES } from './colors'
 import './CounterList.css'
 
@@ -122,7 +122,7 @@ function SortableRow({ counter, colorIndex, activeId, editing, showDelete, onSel
 
 export function CounterList({ counters, activeId, onSelect, onAdd, onDelete, onClose, onShowMulti, onReorder, onRename }: Props) {
   const [editing, setEditing] = useState(false)
-  const [keyboardDictation, setKeyboardDictation] = useState(getPreferKeyboardDictation)
+  const [webSpeech, setWebSpeech] = useState(getPreferWebSpeech)
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -140,9 +140,9 @@ export function CounterList({ counters, activeId, onSelect, onAdd, onDelete, onC
     onReorder(reordered)
   }
 
-  function toggleKeyboardDictation() {
-    const next = !keyboardDictation
-    setKeyboardDictation(next)
+  function toggleWebSpeech() {
+    const next = !webSpeech
+    setWebSpeech(next)
     localStorage.setItem(PREF_KEY, String(next))
   }
 
@@ -255,14 +255,14 @@ export function CounterList({ counters, activeId, onSelect, onAdd, onDelete, onC
           </button>
 
           <div className="list-settings-label" style={{ marginTop: 24 }}>Notes</div>
-          <button className="settings-toggle-row" onClick={toggleKeyboardDictation}>
+          <button className="settings-toggle-row" onClick={toggleWebSpeech}>
             <div className="settings-toggle-text">
-              <span className="settings-toggle-title">Dictate via keyboard</span>
+              <span className="settings-toggle-title">Use Web Speech</span>
               <span className="settings-toggle-desc">
-                Opens the keyboard instead of auto-starting Web Speech. Tap the mic on your keyboard to dictate.
+                Auto-starts speech recognition when adding a note, instead of opening the keyboard. May not work as well as your keyboard or OS dictation.
               </span>
             </div>
-            <div className={`toggle-switch ${keyboardDictation ? 'on' : ''}`} aria-hidden="true">
+            <div className={`toggle-switch ${webSpeech ? 'on' : ''}`} aria-hidden="true">
               <div className="toggle-thumb" />
             </div>
           </button>
