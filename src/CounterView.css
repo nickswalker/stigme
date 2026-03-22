@@ -177,8 +177,16 @@
 }
 
 /* ── Count display ──────────────────────────────── */
-.count-area {
+.counter-middle {
   flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 32px;
+}
+
+.count-area {
   position: relative;
   display: flex;
   flex-direction: column;
@@ -249,7 +257,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  margin: 0 auto 32px;
+  margin: 0 auto;
   transition: transform 0.08s ease, box-shadow 0.08s ease;
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
@@ -338,6 +346,27 @@
 .reset-confirm-text {
   font-size: 13px;
   font-weight: 600;
+}
+
+.settings-reset-btn {
+  color: var(--danger);
+  justify-content: flex-start;
+}
+
+.reset-confirm-modal {
+  padding-bottom: max(16px, env(safe-area-inset-bottom));
+}
+
+.reset-confirm-body {
+  padding: 16px 20px;
+  color: var(--text-dim);
+  font-size: 14px;
+  margin: 0;
+}
+
+.note-btn.danger {
+  background: var(--danger);
+  color: #fff;
 }
 
 /* ── Modal ──────────────────────────────────────── */
