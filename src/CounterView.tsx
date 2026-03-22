@@ -302,13 +302,13 @@ const handleSaveNote = useCallback(async (text: string) => {
 
       {/* Count display + tap button */}
       <div className="counter-middle">
+        {prevHue != null && (
+          <div className="edge-peek edge-peek--left" style={{ '--peek-hue': prevHue } as React.CSSProperties} />
+        )}
+        {nextHue != null && (
+          <div className="edge-peek edge-peek--right" style={{ '--peek-hue': nextHue } as React.CSSProperties} />
+        )}
         <div className="count-area">
-          {prevHue != null && (
-            <div className="edge-peek edge-peek--left" style={{ '--peek-hue': prevHue } as React.CSSProperties} />
-          )}
-          {nextHue != null && (
-            <div className="edge-peek edge-peek--right" style={{ '--peek-hue': nextHue } as React.CSSProperties} />
-          )}
           <div className="count-display">
             {count.toLocaleString()}
           </div>
