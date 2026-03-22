@@ -257,7 +257,7 @@ export function CounterList({ counters, activeId, onSelect, onAdd, onDelete, onC
           <div className="list-settings-label" style={{ marginTop: 24 }}>Notes</div>
           <button className="settings-toggle-row" onClick={toggleKeyboardDictation}>
             <div className="settings-toggle-text">
-              <span className="settings-toggle-title">Use keyboard dictation</span>
+              <span className="settings-toggle-title">Dictate via keyboard</span>
               <span className="settings-toggle-desc">
                 Opens the keyboard instead of auto-starting Web Speech. Tap the mic on your keyboard to dictate.
               </span>
