@@ -15,7 +15,7 @@ import {
   arrayMove,
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { getCounters, getAllTaps, getNotes, type Counter } from './db'
+import { getCounters, getAllTaps, getNotes, clearAllData, type Counter } from './db'
 import { getPreferWebSpeech, PREF_KEY, getPreferSound, SOUND_KEY } from './SettingsView'
 import { counterHue, hueToHex, hexToHue } from './colors'
 import './CounterList.css'
@@ -33,6 +33,7 @@ interface Props {
   onRecolor: (id: string, hue: number) => void
   wakeLockEnabled: boolean
   onToggleWakeLock: () => void
+  onResetAll: () => void
 }
 
 interface RowProps {
@@ -142,8 +143,9 @@ function SortableRow({ counter, hue, activeId, editing, showDelete, onSelect, on
   )
 }
 
-export function CounterList({ counters, activeId, onSelect, onAdd, onDelete, onClose, onShowMulti, onReorder, onRename, onRecolor, wakeLockEnabled, onToggleWakeLock }: Props) {
+export function CounterList({ counters, activeId, onSelect, onAdd, onDelete, onClose, onShowMulti, onReorder, onRename, onRecolor, wakeLockEnabled, onToggleWakeLock, onResetAll }: Props) {
   const [editing, setEditing] = useState(false)
+  const [showResetModal, setShowResetModal] = useState(false)
   const [webSpeech, setWebSpeech] = useState(getPreferWebSpeech)
   const [soundEnabled, setSoundEnabled] = useState(getPreferSound)
 
@@ -200,6 +202,12 @@ export function CounterList({ counters, activeId, onSelect, onAdd, onDelete, onC
     a.click()
     URL.revokeObjectURL(url)
   }, [])
+
+  async function handleResetAll() {
+    await clearAllData()
+    setShowResetModal(false)
+    onResetAll()
+  }
 
   return (
     <div className="counter-list-view">
@@ -283,6 +291,9 @@ export function CounterList({ counters, activeId, onSelect, onAdd, onDelete, onC
               <line x1="12" y1="15" x2="12" y2="3" />
             </svg>
           </button>
+          <button className="settings-action-row settings-action-row--danger" onClick={() => setShowResetModal(true)}>
+            Reset all data
+          </button>
 
           <div className="list-settings-label" style={{ marginTop: 24 }}>Display</div>
           <button className="settings-toggle-row" onClick={toggleSound}>
@@ -322,6 +333,21 @@ export function CounterList({ counters, activeId, onSelect, onAdd, onDelete, onC
           </button>
         </div>
       </div>
+
+      {showResetModal && (
+        <div className="list-modal-overlay" onClick={() => setShowResetModal(false)}>
+          <div className="list-modal" onClick={e => e.stopPropagation()}>
+            <div className="list-modal-header">
+              <h2>Reset all data?</h2>
+            </div>
+            <p className="list-modal-body">This will clear the count and all history for every counter. This cannot be undone.</p>
+            <div className="list-modal-actions">
+              <button className="list-modal-btn" onClick={() => setShowResetModal(false)}>Cancel</button>
+              <button className="list-modal-btn list-modal-btn--danger" onClick={handleResetAll}>Reset</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

@@ -146,3 +146,11 @@ export async function deleteNote(id: number): Promise<void> {
   const db = await getDb()
   await db.delete('notes', id)
 }
+
+export async function clearAllData(): Promise<void> {
+  const db = await getDb()
+  await Promise.all([
+    db.clear('taps'),
+    db.clear('notes'),
+  ])
+}

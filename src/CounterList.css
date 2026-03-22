@@ -74,7 +74,7 @@
 }
 
 .list-settings {
-  padding: 24px 0 40px;
+  padding: 24px 0;
   border-top: 1px solid var(--border);
   margin-top: 8px;
 }
@@ -106,6 +106,62 @@
 
 .settings-action-row:active {
   background: var(--bg3);
+}
+
+.settings-action-row--danger {
+  color: var(--danger);
+  border-top: none;
+}
+
+.list-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: flex-end;
+  z-index: 100;
+}
+
+.list-modal {
+  background: var(--bg2);
+  border-radius: 20px 20px 0 0;
+  width: 100%;
+  padding: 24px 20px 20px;
+}
+
+.list-modal-header h2 {
+  margin: 0 0 12px;
+  font-size: 18px;
+}
+
+.list-modal-body {
+  margin: 0 0 24px;
+  color: var(--text-dim);
+  font-size: 15px;
+  line-height: 1.4;
+}
+
+.list-modal-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.list-modal-btn {
+  flex: 1;
+  padding: 14px;
+  border-radius: 12px;
+  border: none;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  background: var(--bg3);
+  color: var(--text);
+}
+
+.list-modal-btn--danger {
+  background: var(--danger);
+  color: #fff;
 }
 
 .settings-toggle-row {
