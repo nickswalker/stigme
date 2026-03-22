@@ -16,7 +16,7 @@ import {
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { getCounters, getAllTaps, getNotes, type Counter } from './db'
-import { getPreferWebSpeech, PREF_KEY } from './SettingsView'
+import { getPreferWebSpeech, PREF_KEY, getPreferSound, SOUND_KEY } from './SettingsView'
 import { counterHue, hueToHex, hexToHue } from './colors'
 import './CounterList.css'
 
@@ -145,6 +145,7 @@ function SortableRow({ counter, hue, activeId, editing, showDelete, onSelect, on
 export function CounterList({ counters, activeId, onSelect, onAdd, onDelete, onClose, onShowMulti, onReorder, onRename, onRecolor, wakeLockEnabled, onToggleWakeLock }: Props) {
   const [editing, setEditing] = useState(false)
   const [webSpeech, setWebSpeech] = useState(getPreferWebSpeech)
+  const [soundEnabled, setSoundEnabled] = useState(getPreferSound)
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -166,6 +167,12 @@ export function CounterList({ counters, activeId, onSelect, onAdd, onDelete, onC
     const next = !webSpeech
     setWebSpeech(next)
     localStorage.setItem(PREF_KEY, String(next))
+  }
+
+  function toggleSound() {
+    const next = !soundEnabled
+    setSoundEnabled(next)
+    localStorage.setItem(SOUND_KEY, String(next))
   }
 
   const downloadAllHistory = useCallback(async () => {
@@ -278,6 +285,17 @@ export function CounterList({ counters, activeId, onSelect, onAdd, onDelete, onC
           </button>
 
           <div className="list-settings-label" style={{ marginTop: 24 }}>Display</div>
+          <button className="settings-toggle-row" onClick={toggleSound}>
+            <div className="settings-toggle-text">
+              <span className="settings-toggle-title">Tap sounds</span>
+              <span className="settings-toggle-desc">
+                Plays a tone when tapping. Pitch varies by counter color.
+              </span>
+            </div>
+            <div className={`toggle-switch ${soundEnabled ? 'on' : ''}`} aria-hidden="true">
+              <div className="toggle-thumb" />
+            </div>
+          </button>
           <button className="settings-toggle-row" onClick={onToggleWakeLock}>
             <div className="settings-toggle-text">
               <span className="settings-toggle-title">Keep screen on</span>

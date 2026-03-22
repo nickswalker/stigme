@@ -17,6 +17,7 @@ function hueToSemitones(hue: number): number {
 }
 
 export function playTap(hue: number, direction: 1 | -1 = 1): void {
+  if (localStorage.getItem('preferSound') === 'false') return
   try {
     const ctx = getCtx()
     const now = ctx.currentTime
