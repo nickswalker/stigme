@@ -441,6 +441,19 @@
   padding: 8px 0;
 }
 
+.history-day-header {
+  padding: 6px 20px 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  background: var(--bg2);
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+
 .history-item-wrap {
   position: relative;
   overflow: hidden;
