@@ -4,7 +4,7 @@ import { CounterView } from './CounterView'
 import { CounterList } from './CounterList'
 import { MultiCounterView } from './MultiCounterView'
 import { getCounters, saveCounter, saveCounters, deleteCounter, type Counter } from './db'
-import { BUTTON_HUES } from './colors'
+import { BUTTON_HUES, counterHue } from './colors'
 import { getPreferWakeLock, WAKE_LOCK_KEY } from './SettingsView'
 import './App.css'
 
@@ -165,6 +165,14 @@ export default function App() {
     setCounters(prev => prev.map(c => c.id === id ? updated : c))
   }, [counters])
 
+  const onRecolor = useCallback(async (id: string, hue: number) => {
+    const counter = counters.find(c => c.id === id)
+    if (!counter) return
+    const updated = { ...counter, customHue: hue }
+    await saveCounter(updated)
+    setCounters(prev => prev.map(c => c.id === id ? updated : c))
+  }, [counters])
+
   const handleMultiViewIdsChange = useCallback((ids: string[]) => {
     setMultiViewIds(ids)
     localStorage.setItem('multiViewIds', JSON.stringify(ids))
@@ -173,11 +181,11 @@ export default function App() {
   if (!activeId) return null
 
   const activeIdx = counters.findIndex(c => c.id === activeId)
-  const activeColorIndex = counters[activeIdx]?.colorIndex ?? activeIdx
+  const activeCounter = counters[activeIdx]
   const prevCounter = activeIdx > 0 ? counters[activeIdx - 1] : null
   const nextCounter = activeIdx < counters.length - 1 ? counters[activeIdx + 1] : null
-  const prevHue = prevCounter ? BUTTON_HUES[(prevCounter.colorIndex ?? (activeIdx - 1)) % BUTTON_HUES.length] : null
-  const nextHue = nextCounter ? BUTTON_HUES[(nextCounter.colorIndex ?? (activeIdx + 1)) % BUTTON_HUES.length] : null
+  const prevHue = prevCounter ? counterHue(prevCounter) : null
+  const nextHue = nextCounter ? counterHue(nextCounter) : null
 
   return (
     <div
@@ -189,7 +197,7 @@ export default function App() {
         <CounterView
           key={activeId}
           counterId={activeId}
-          colorIndex={activeColorIndex}
+          initialHue={counterHue(activeCounter)}
           prevHue={prevHue}
           nextHue={nextHue}
           onShowList={() => startVT('to-list', () => setView('list'))}
@@ -214,6 +222,7 @@ export default function App() {
           onShowMulti={() => startVT('to-counter', () => setView('multi'))}
           onReorder={onReorder}
           onRename={onRename}
+          onRecolor={onRecolor}
           wakeLockEnabled={wakeLockEnabled}
           onToggleWakeLock={toggleWakeLock}
         />

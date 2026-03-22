@@ -21,6 +21,7 @@ export interface Counter {
   step: number
   order?: number
   colorIndex?: number
+  customHue?: number
 }
 
 const DB_NAME = 'stigme'

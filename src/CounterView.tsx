@@ -6,11 +6,11 @@ import { NoteModal } from './NoteModal'
 import { playTap } from './tapSound'
 import './CounterView.css'
 
-import { BUTTON_HUES } from './colors'
+import { counterHue } from './colors'
 
 interface Props {
   counterId: string
-  colorIndex: number
+  initialHue: number
   prevHue?: number | null
   nextHue?: number | null
   onShowList: () => void
@@ -21,9 +21,9 @@ type HistoryEntry =
   | { kind: 'tap'; rec: TapRecord }
   | { kind: 'note'; rec: NoteRecord }
 
-export function CounterView({ counterId, colorIndex, prevHue, nextHue, onShowList, onCounterUpdate }: Props) {
-  const hue = BUTTON_HUES[colorIndex % BUTTON_HUES.length]
+export function CounterView({ counterId, initialHue, prevHue, nextHue, onShowList, onCounterUpdate }: Props) {
   const { count, counter, loading, increment, decrement, undo, canUndo, deleteTap, reset, rename, setStep } = useCounter(counterId)
+  const hue = counter ? counterHue(counter) : initialHue
   const [editingName, setEditingName] = useState(false)
   const [nameInput, setNameInput] = useState('')
   const [showSettings, setShowSettings] = useState(false)
@@ -87,7 +87,7 @@ export function CounterView({ counterId, colorIndex, prevHue, nextHue, onShowLis
   }, [counterId])
 
   const handleTap = useCallback(async () => {
-    playTap(colorIndex, 1)
+    playTap(hue, 1)
     await increment()
     const now = Date.now()
     lastTapAtRef.current = now
@@ -104,7 +104,7 @@ export function CounterView({ counterId, colorIndex, prevHue, nextHue, onShowLis
   }, [increment, counter, onCounterUpdate])
 
   const handleDecrement = useCallback(async () => {
-    playTap(colorIndex, -1)
+    playTap(hue, -1)
     await decrement()
     const now = Date.now()
     lastTapAtRef.current = now

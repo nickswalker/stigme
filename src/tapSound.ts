@@ -7,20 +7,20 @@ function getCtx(): AudioContext {
   return ctx
 }
 
-// Major scale semitone offsets — 8 distinct pitches, one per hue, within one octave.
+// Major scale semitone offsets — 8 distinct pitches within one octave.
 // Range: 880–1760 Hz (A5–A6).
 const SCALE_SEMITONES = [0, 2, 4, 5, 7, 9, 11, 12]
 
-function indexToFreq(colorIndex: number): number {
-  const semitones = SCALE_SEMITONES[colorIndex % SCALE_SEMITONES.length]
-  return 880 * Math.pow(2, semitones / 12)
+// Map a hue (0–360) to one of the 8 scale tones by bucketing into 45° segments.
+function hueToSemitones(hue: number): number {
+  return SCALE_SEMITONES[Math.round(hue / 45) % 8]
 }
 
-export function playTap(colorIndex: number, direction: 1 | -1 = 1): void {
+export function playTap(hue: number, direction: 1 | -1 = 1): void {
   try {
     const ctx = getCtx()
     const now = ctx.currentTime
-    const freq = indexToFreq(colorIndex) * (direction === 1 ? 1 : 0.794)  // minor third down for decrement
+    const freq = 880 * Math.pow(2, hueToSemitones(hue) / 12) * (direction === 1 ? 1 : 0.794)
 
     const osc = ctx.createOscillator()
     const gain = ctx.createGain()
