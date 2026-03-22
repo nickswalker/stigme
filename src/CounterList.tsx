@@ -17,7 +17,7 @@ import {
 import { CSS } from '@dnd-kit/utilities'
 import { getCounters, getAllTaps, getNotes, type Counter } from './db'
 import { getPreferWebSpeech, PREF_KEY } from './SettingsView'
-import { BUTTON_HUES } from './colors'
+import { counterHue, hueToHex, hexToHue } from './colors'
 import './CounterList.css'
 
 interface Props {
@@ -30,27 +30,29 @@ interface Props {
   onShowMulti: () => void
   onReorder: (counters: Counter[]) => void
   onRename: (id: string, name: string) => void
+  onRecolor: (id: string, hue: number) => void
   wakeLockEnabled: boolean
   onToggleWakeLock: () => void
 }
 
 interface RowProps {
   counter: Counter
-  colorIndex: number
+  hue: number
   activeId: string
   editing: boolean
   showDelete: boolean
   onSelect: (id: string) => void
   onDelete: (id: string) => void
   onRename: (id: string, name: string) => void
+  onRecolor: (id: string, hue: number) => void
 }
 
-function SortableRow({ counter, colorIndex, activeId, editing, showDelete, onSelect, onDelete, onRename }: RowProps) {
-  const hue = BUTTON_HUES[colorIndex % BUTTON_HUES.length]
+function SortableRow({ counter, hue, activeId, editing, showDelete, onSelect, onDelete, onRename, onRecolor }: RowProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: counter.id })
   const [isRenaming, setIsRenaming] = useState(false)
   const [nameInput, setNameInput] = useState('')
   const inputRef = useRef<HTMLInputElement>(null)
+  const colorInputRef = useRef<HTMLInputElement>(null)
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -84,22 +86,40 @@ function SortableRow({ counter, colorIndex, activeId, editing, showDelete, onSel
           </svg>
         </span>
       )}
-      {editing && isRenaming ? (
+      {editing ? (
         <div className="list-item-main">
-          <span className="list-item-dot" />
-          <form onSubmit={e => { e.preventDefault(); submitRename() }} style={{ flex: 1 }}>
-            <input
-              ref={inputRef}
-              className="list-item-rename"
-              value={nameInput}
-              onChange={e => setNameInput(e.target.value)}
-              onBlur={submitRename}
-              autoFocus
-            />
-          </form>
+          <button
+            className="list-item-dot list-item-dot--pickable"
+            onClick={() => colorInputRef.current?.click()}
+            aria-label="Change color"
+          />
+          <input
+            ref={colorInputRef}
+            type="color"
+            value={hueToHex(hue)}
+            onChange={e => onRecolor(counter.id, hexToHue(e.target.value))}
+            style={{ position: 'absolute', width: 0, height: 0, opacity: 0, pointerEvents: 'none' }}
+            tabIndex={-1}
+          />
+          {isRenaming ? (
+            <form onSubmit={e => { e.preventDefault(); submitRename() }} style={{ flex: 1 }}>
+              <input
+                ref={inputRef}
+                className="list-item-rename"
+                value={nameInput}
+                onChange={e => setNameInput(e.target.value)}
+                onBlur={submitRename}
+                autoFocus
+              />
+            </form>
+          ) : (
+            <button className="list-item-name-edit" onClick={startRename}>
+              {counter.name}
+            </button>
+          )}
         </div>
       ) : (
-        <button className="list-item-main" onClick={() => editing ? startRename() : onSelect(counter.id)}>
+        <button className="list-item-main" onClick={() => onSelect(counter.id)}>
           <span className="list-item-dot" />
           <span className="list-item-name">{counter.name}</span>
         </button>
@@ -122,7 +142,7 @@ function SortableRow({ counter, colorIndex, activeId, editing, showDelete, onSel
   )
 }
 
-export function CounterList({ counters, activeId, onSelect, onAdd, onDelete, onClose, onShowMulti, onReorder, onRename, wakeLockEnabled, onToggleWakeLock }: Props) {
+export function CounterList({ counters, activeId, onSelect, onAdd, onDelete, onClose, onShowMulti, onReorder, onRename, onRecolor, wakeLockEnabled, onToggleWakeLock }: Props) {
   const [editing, setEditing] = useState(false)
   const [webSpeech, setWebSpeech] = useState(getPreferWebSpeech)
 
@@ -211,17 +231,18 @@ export function CounterList({ counters, activeId, onSelect, onAdd, onDelete, onC
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
           <SortableContext items={counters.map(c => c.id)} strategy={verticalListSortingStrategy}>
             <div className="list-body">
-              {counters.map((c, i) => (
+              {counters.map(c => (
                 <SortableRow
                   key={c.id}
                   counter={c}
-                  colorIndex={c.colorIndex ?? i}
+                  hue={counterHue(c)}
                   activeId={activeId}
                   editing={editing}
                   showDelete={editing && counters.length > 1}
                   onSelect={onSelect}
                   onDelete={onDelete}
                   onRename={onRename}
+                  onRecolor={onRecolor}
                 />
               ))}
             </div>

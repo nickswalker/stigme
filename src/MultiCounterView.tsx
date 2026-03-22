@@ -3,7 +3,7 @@ import { useCounter } from './useCounter'
 import { getTapsForCounter, getNotes, addNote, type Counter, type TapRecord, type NoteRecord } from './db'
 import { NoteModal } from './NoteModal'
 import { playTap } from './tapSound'
-import { BUTTON_HUES } from './colors'
+import { counterHue } from './colors'
 import './MultiCounterView.css'
 import './CounterView.css'
 
@@ -34,7 +34,7 @@ function formatElapsed(ms: number): string {
 }
 
 function MultiCounterCell({ counter, onFlash, onCounterUpdate }: CellProps) {
-  const hue = BUTTON_HUES[(counter.colorIndex ?? 0) % BUTTON_HUES.length]
+  const hue = counterHue(counter)
   const { count, loading, increment, decrement, undo, canUndo } = useCounter(counter.id)
   const [showNote, setShowNote] = useState(false)
   const [, forceUpdate] = useState(0)
@@ -73,7 +73,7 @@ function MultiCounterCell({ counter, onFlash, onCounterUpdate }: CellProps) {
   }, [])
 
   const handleTap = useCallback(async () => {
-    playTap(counter.colorIndex ?? 0, 1)
+    playTap(hue, 1)
     await increment()
     const now = Date.now()
     lastTapAtRef.current = now
@@ -89,7 +89,7 @@ function MultiCounterCell({ counter, onFlash, onCounterUpdate }: CellProps) {
   }, [increment, hue, onFlash, counter, onCounterUpdate])
 
   const handleDecrement = useCallback(async () => {
-    playTap(counter.colorIndex ?? 0, -1)
+    playTap(hue, -1)
     await decrement()
     forceUpdate(n => n + 1)
     onCounterUpdate({ ...counter })
@@ -197,7 +197,7 @@ export function MultiCounterView({ counters, multiViewIds, onMultiViewIdsChange,
           kind: 'tap' as const,
           rec,
           counterName: c?.name ?? rec.counterId,
-          counterHue: BUTTON_HUES[(c?.colorIndex ?? 0) % BUTTON_HUES.length],
+          counterHue: counterHue(c),
         }
       }),
       ...notes
@@ -207,7 +207,7 @@ export function MultiCounterView({ counters, multiViewIds, onMultiViewIdsChange,
           return {
             kind: 'note' as const,
             rec,
-            counterHue: BUTTON_HUES[(c?.colorIndex ?? 0) % BUTTON_HUES.length],
+            counterHue: counterHue(c),
           }
         }),
     ].sort((a, b) => b.rec.timestamp - a.rec.timestamp)
@@ -366,10 +366,9 @@ export function MultiCounterView({ counters, multiViewIds, onMultiViewIdsChange,
             ) : (
               <div className="picker-list">
                 {availableToAdd.map(c => {
-                  const hue = BUTTON_HUES[(c.colorIndex ?? 0) % BUTTON_HUES.length]
                   return (
                     <button key={c.id} className="picker-item" onClick={() => handleAdd(c.id)}>
-                      <span className="picker-dot" style={{ background: `hsl(${hue}, 70%, 58%)` }} />
+                      <span className="picker-dot" style={{ background: `hsl(${counterHue(c)}, 70%, 58%)` }} />
                       <span>{c.name}</span>
                     </button>
                   )
