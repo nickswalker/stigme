@@ -223,7 +223,7 @@ export function CounterList({ counters, activeId, onSelect, onAdd, onDelete, onC
           )}
         </button>
         <h1 className="list-title">Counters</h1>
-        <div style={{ display: 'flex', gap: 4 }}>
+        <div style={{ display: 'flex', gap: 4, justifyContent: 'flex-end' }}>
           {!editing && (
             <>
               <button className="icon-btn" onClick={onAdd} aria-label="Add counter">
