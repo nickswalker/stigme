@@ -6,7 +6,7 @@
 .tap-flash {
   position: fixed;
   inset: 0;
-  background: #fff;
+  background: hsla(var(--flash-hue, 0), 70%, 70%, 1);
   pointer-events: none;
   z-index: 200;
   opacity: 0;
