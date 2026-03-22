@@ -6,10 +6,9 @@
 }
 
 .list-header {
-  position: relative;
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  justify-content: space-between;
   padding: 16px 20px;
   padding-top: max(16px, env(safe-area-inset-top));
   background: var(--bg2);
@@ -18,10 +17,6 @@
 }
 
 .list-title {
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
-  pointer-events: none;
   margin: 0;
   font-size: 18px;
   font-weight: 600;
