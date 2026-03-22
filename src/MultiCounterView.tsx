@@ -165,7 +165,7 @@ export function MultiCounterView({ counters, multiViewIds, onMultiViewIdsChange,
     .map(id => counters.find(c => c.id === id))
     .filter(Boolean) as Counter[]
 
-  const is2up = cells.length <= 2
+  const is2up = cells.length <= 2 && !editing
   const totalSlots = is2up ? 2 : 4
   const availableToAdd = counters.filter(c => !multiViewIds.includes(c.id))
 
@@ -404,8 +404,10 @@ export function MultiCounterView({ counters, multiViewIds, onMultiViewIdsChange,
                     <div key={key}>
                       {entry.kind === 'tap' ? (
                         <div className="history-item">
-                          <span className="history-counter-dot" style={dotStyle} />
-                          <span className="history-counter-name">{entry.counterName}</span>
+                          <span className="history-counter-identity">
+                            <span className="history-counter-dot" style={dotStyle} />
+                            <span className="history-counter-name">{entry.counterName}</span>
+                          </span>
                           <span className={`history-value ${entry.rec.value >= 0 ? 'positive' : 'negative'}`}>
                             {entry.rec.value >= 0 ? '+' : ''}{entry.rec.value}
                           </span>
@@ -413,7 +415,10 @@ export function MultiCounterView({ counters, multiViewIds, onMultiViewIdsChange,
                         </div>
                       ) : (
                         <div className="history-item history-item--note">
-                          <span className="history-counter-dot" style={dotStyle} />
+                          <span className="history-counter-identity">
+                            <span className="history-counter-dot" style={dotStyle} />
+                            <span className="history-counter-name">{entry.rec.counterName}</span>
+                          </span>
                           <span className="history-note-icon">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="14" height="14">
                               <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />

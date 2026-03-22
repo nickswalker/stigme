@@ -254,6 +254,13 @@
 }
 
 /* ── History identity ─────────────────────────── */
+.history-counter-identity {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
 .history-counter-dot {
   width: 10px;
   height: 10px;
