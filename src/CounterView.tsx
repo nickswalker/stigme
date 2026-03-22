@@ -31,6 +31,7 @@ export function CounterView({ counterId, colorIndex, prevHue, nextHue, onShowLis
   const [history, setHistory] = useState<HistoryEntry[]>([])
   const [showNote, setShowNote] = useState(false)
   const [confirmReset, setConfirmReset] = useState(false)
+  const [showResetModal, setShowResetModal] = useState(false)
   const [, forceUpdate] = useState(0)
   const [flashKey, setFlashKey] = useState(0)
   const [swipedKey, setSwipedKey] = useState<string | null>(null)
@@ -132,6 +133,16 @@ export function CounterView({ counterId, colorIndex, prevHue, nextHue, onShowLis
     forceUpdate(n => n + 1)
     if (counter) onCounterUpdate({ ...counter })
   }, [reset, confirmReset, counter, onCounterUpdate])
+
+  const handleResetFromSettings = useCallback(async () => {
+    await reset()
+    setShowResetModal(false)
+    setShowSettings(false)
+    lastTapAtRef.current = null
+    setElapsed(null)
+    forceUpdate(n => n + 1)
+    if (counter) onCounterUpdate({ ...counter })
+  }, [reset, counter, onCounterUpdate])
 
   const handleSaveNote = useCallback(async (text: string) => {
     await addNote(text, counter?.name ?? 'Counter')
@@ -292,39 +303,44 @@ export function CounterView({ counterId, colorIndex, prevHue, nextHue, onShowLis
               <line x1="12" y1="15" x2="12" y2="3" />
             </svg>
           </button>
+          <button className="settings-row settings-reset-btn" onClick={() => setShowResetModal(true)}>
+            Reset all data
+          </button>
         </div>
       )}
 
-      {/* Count display */}
-      <div className="count-area">
-        {prevHue != null && (
-          <div className="edge-peek edge-peek--left" style={{ '--peek-hue': prevHue } as React.CSSProperties} />
-        )}
-        {nextHue != null && (
-          <div className="edge-peek edge-peek--right" style={{ '--peek-hue': nextHue } as React.CSSProperties} />
-        )}
-        <div className="count-display">
-          {count.toLocaleString()}
+      {/* Count display + tap button */}
+      <div className="counter-middle">
+        <div className="count-area">
+          {prevHue != null && (
+            <div className="edge-peek edge-peek--left" style={{ '--peek-hue': prevHue } as React.CSSProperties} />
+          )}
+          {nextHue != null && (
+            <div className="edge-peek edge-peek--right" style={{ '--peek-hue': nextHue } as React.CSSProperties} />
+          )}
+          <div className="count-display">
+            {count.toLocaleString()}
+          </div>
+          {elapsed != null && (
+            <div className="elapsed-display">{formatElapsed(elapsed)}</div>
+          )}
+          {counter?.step && counter.step > 1 && (
+            <div className="step-indicator">step: {counter.step}</div>
+          )}
         </div>
-        {elapsed != null && (
-          <div className="elapsed-display">{formatElapsed(elapsed)}</div>
-        )}
-        {counter?.step && counter.step > 1 && (
-          <div className="step-indicator">step: {counter.step}</div>
-        )}
-      </div>
 
-      {/* Main tap button */}
-      <button
-        ref={tapButtonRef}
-        className="tap-button"
-        style={{ '--btn-hue': hue } as React.CSSProperties}
-        onClick={handleTap}
-        aria-label="Increment counter"
-      >
-        <span className="tap-label">TAP</span>
-        {streak >= 2 && <span className="streak-label">{streak}</span>}
-      </button>
+        {/* Main tap button */}
+        <button
+          ref={tapButtonRef}
+          className="tap-button"
+          style={{ '--btn-hue': hue } as React.CSSProperties}
+          onClick={handleTap}
+          aria-label="Increment counter"
+        >
+          <span className="tap-label">TAP</span>
+          {streak >= 2 && <span className="streak-label">{streak}</span>}
+        </button>
+      </div>
 
       {/* Bottom controls */}
       <div className="bottom-controls">
@@ -378,6 +394,22 @@ export function CounterView({ counterId, colorIndex, prevHue, nextHue, onShowLis
       {flashKey > 0 && <div key={flashKey} className="tap-flash" style={{ '--flash-hue': hue } as React.CSSProperties} />}
 
       {/* History modal */}
+      {/* Reset confirmation modal */}
+      {showResetModal && (
+        <div className="modal-overlay" onClick={() => setShowResetModal(false)}>
+          <div className="modal reset-confirm-modal" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>Reset all data?</h2>
+            </div>
+            <p className="reset-confirm-body">This will clear the count and all history. This cannot be undone.</p>
+            <div className="note-actions">
+              <button className="note-btn cancel" onClick={() => setShowResetModal(false)}>Cancel</button>
+              <button className="note-btn save danger" onClick={handleResetFromSettings}>Reset</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {showHistory && (
         <div className="modal-overlay" onClick={() => setShowHistory(false)}>
           <div className="modal" onClick={e => e.stopPropagation()}>
