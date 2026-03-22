@@ -31,6 +31,7 @@ export default function App() {
   const [view, setView] = useState<'counter' | 'list' | 'multi'>('counter')
   const [multiViewIds, setMultiViewIds] = useState<string[]>(loadMultiViewIds)
   const [wakeLockEnabled, setWakeLockEnabled] = useState(getPreferWakeLock)
+  const [resetVersion, setResetVersion] = useState(0)
   const touchStartRef = useRef<{ x: number; y: number } | null>(null)
 
   useEffect(() => {
@@ -195,7 +196,7 @@ export default function App() {
     >
       {view === 'counter' ? (
         <CounterView
-          key={activeId}
+          key={activeId + '-' + resetVersion}
           counterId={activeId}
           initialHue={counterHue(activeCounter)}
           prevHue={prevHue}
@@ -225,6 +226,7 @@ export default function App() {
           onRecolor={onRecolor}
           wakeLockEnabled={wakeLockEnabled}
           onToggleWakeLock={toggleWakeLock}
+          onResetAll={() => setResetVersion(v => v + 1)}
         />
       )}
     </div>
