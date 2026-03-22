@@ -48,6 +48,10 @@ export default function App() {
     }
   }, [wakeLockEnabled])
 
+  useEffect(() => {
+    document.body.dataset.view = view
+  }, [view])
+
   const toggleWakeLock = useCallback(() => {
     setWakeLockEnabled(prev => {
       const next = !prev

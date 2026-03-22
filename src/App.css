@@ -27,6 +27,12 @@ html, body {
   overflow: hidden;
 }
 
+/* Match body background to each view's bottom bar so the iOS safe area
+   inset below the home bar blends in rather than showing black. */
+body[data-view="counter"] {
+  background: var(--bg2);
+}
+
 #root {
   width: 100%;
   height: 100dvh;
