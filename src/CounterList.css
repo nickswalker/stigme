@@ -28,6 +28,47 @@
   overflow-y: auto;
 }
 
+.list-body--special {
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 0;
+}
+
+.multi-counter-row {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 18px 20px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text);
+  font-size: 17px;
+  text-align: left;
+  transition: background 0.15s;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.multi-counter-row:active {
+  background: var(--bg3);
+}
+
+.multi-counter-row-icon {
+  color: var(--accent);
+  display: flex;
+  align-items: center;
+}
+
+.multi-counter-row-label {
+  flex: 1;
+  font-weight: 500;
+}
+
+.multi-counter-row-chevron {
+  color: var(--text-dim);
+}
+
 .list-body {
   padding: 8px 0;
 }

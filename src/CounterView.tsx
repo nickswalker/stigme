@@ -375,7 +375,7 @@ export function CounterView({ counterId, colorIndex, prevHue, nextHue, onShowLis
       )}
 
       {/* Tap flash */}
-      {flashKey > 0 && <div key={flashKey} className="tap-flash" />}
+      {flashKey > 0 && <div key={flashKey} className="tap-flash" style={{ '--flash-hue': hue } as React.CSSProperties} />}
 
       {/* History modal */}
       {showHistory && (

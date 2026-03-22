@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { flushSync } from 'react-dom'
 import { CounterView } from './CounterView'
 import { CounterList } from './CounterList'
+import { MultiCounterView } from './MultiCounterView'
 import { getCounters, saveCounter, saveCounters, deleteCounter, type Counter } from './db'
 import { BUTTON_HUES } from './colors'
 import './App.css'
@@ -18,10 +19,16 @@ function startVT(dir: string, fn: () => void) {
   }
 }
 
+function loadMultiViewIds(): string[] {
+  try { return JSON.parse(localStorage.getItem('multiViewIds') ?? '[]') }
+  catch { return [] }
+}
+
 export default function App() {
   const [counters, setCounters] = useState<Counter[]>([])
   const [activeId, setActiveId] = useState<string | null>(null)
-  const [view, setView] = useState<'counter' | 'list'>('counter')
+  const [view, setView] = useState<'counter' | 'list' | 'multi'>('counter')
+  const [multiViewIds, setMultiViewIds] = useState<string[]>(loadMultiViewIds)
   const touchStartRef = useRef<{ x: number; y: number } | null>(null)
 
   useEffect(() => {
@@ -74,6 +81,11 @@ export default function App() {
       }
       return next
     })
+    setMultiViewIds(prev => {
+      const next = prev.filter(x => x !== id)
+      localStorage.setItem('multiViewIds', JSON.stringify(next))
+      return next
+    })
   }, [activeId])
 
   const selectCounter = useCallback((id: string) => {
@@ -124,6 +136,11 @@ export default function App() {
     setCounters(prev => prev.map(c => c.id === id ? updated : c))
   }, [counters])
 
+  const handleMultiViewIdsChange = useCallback((ids: string[]) => {
+    setMultiViewIds(ids)
+    localStorage.setItem('multiViewIds', JSON.stringify(ids))
+  }, [])
+
   if (!activeId) return null
 
   const activeIdx = counters.findIndex(c => c.id === activeId)
@@ -149,6 +166,14 @@ export default function App() {
           onShowList={() => startVT('to-list', () => setView('list'))}
           onCounterUpdate={onCounterUpdate}
         />
+      ) : view === 'multi' ? (
+        <MultiCounterView
+          counters={counters}
+          multiViewIds={multiViewIds}
+          onMultiViewIdsChange={handleMultiViewIdsChange}
+          onShowList={() => startVT('to-list', () => setView('list'))}
+          onCounterUpdate={onCounterUpdate}
+        />
       ) : (
         <CounterList
           counters={counters}
@@ -157,6 +182,7 @@ export default function App() {
           onAdd={addCounter}
           onDelete={removeCounter}
           onClose={() => startVT('to-counter', () => setView('counter'))}
+          onShowMulti={() => startVT('to-counter', () => setView('multi'))}
           onReorder={onReorder}
           onRename={onRename}
         />
