@@ -435,48 +435,54 @@ export function CounterView({ counterId, initialHue, prevHue, nextHue, onShowLis
               {history.length === 0 ? (
                 <p className="empty-msg">No history yet</p>
               ) : (
-                history.map((entry, i) => {
-                  const key = entry.kind === 'tap' ? `tap-${entry.rec.id}` : `note-${entry.rec.id ?? i}`
-                  const swiped = swipedKey === key
-                  return (
-                    <div
-                      key={key}
-                      className="history-item-wrap"
-                      onTouchStart={e => onRowTouchStart(e, key)}
-                      onTouchMove={onRowTouchMove}
-                      onTouchEnd={onRowTouchEnd}
-                    >
-                      {entry.kind === 'tap' ? (
-                        <div className={`history-item${swiped ? ' swiped' : ''}`}>
-                          <span className={`history-value ${entry.rec.value >= 0 ? 'positive' : 'negative'}`}>
-                            {entry.rec.value >= 0 ? '+' : ''}{entry.rec.value}
-                          </span>
-                          <span className="history-time">{formatTimestamp(entry.rec.timestamp)}</span>
+                groupByDay(history).map((group, gi) =>
+                  <div key={group.label} className="history-day-group">
+                    <div className="history-day-header">{group.label}</div>
+                    {group.entries.map((entry, i) => {
+                      const globalIndex = gi * 1000 + i
+                      const key = entry.kind === 'tap' ? `tap-${entry.rec.id}` : `note-${entry.rec.id ?? globalIndex}`
+                      const swiped = swipedKey === key
+                      return (
+                        <div
+                          key={key}
+                          className="history-item-wrap"
+                          onTouchStart={e => onRowTouchStart(e, key)}
+                          onTouchMove={onRowTouchMove}
+                          onTouchEnd={onRowTouchEnd}
+                        >
+                          {entry.kind === 'tap' ? (
+                            <div className={`history-item${swiped ? ' swiped' : ''}`}>
+                              <span className={`history-value ${entry.rec.value >= 0 ? 'positive' : 'negative'}`}>
+                                {entry.rec.value >= 0 ? '+' : ''}{entry.rec.value}
+                              </span>
+                              <span className="history-time">{formatTimeOnly(entry.rec.timestamp, group.showSeconds)}</span>
+                            </div>
+                          ) : (
+                            <div className={`history-item history-item--note${swiped ? ' swiped' : ''}`}>
+                              <span className="history-note-icon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="14" height="14">
+                                  <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+                                  <polyline points="14 2 14 8 20 8" />
+                                  <line x1="16" y1="13" x2="8" y2="13" />
+                                  <line x1="16" y1="17" x2="8" y2="17" />
+                                </svg>
+                              </span>
+                              <span className="history-note-text">{entry.rec.text}</span>
+                              <span className="history-time">{formatTimeOnly(entry.rec.timestamp, group.showSeconds)}</span>
+                            </div>
+                          )}
+                          <button
+                            className="history-delete-btn"
+                            onClick={e => { e.stopPropagation(); handleDeleteEntry(entry) }}
+                            aria-label="Delete entry"
+                          >
+                            Delete
+                          </button>
                         </div>
-                      ) : (
-                        <div className={`history-item history-item--note${swiped ? ' swiped' : ''}`}>
-                          <span className="history-note-icon">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="14" height="14">
-                              <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
-                              <polyline points="14 2 14 8 20 8" />
-                              <line x1="16" y1="13" x2="8" y2="13" />
-                              <line x1="16" y1="17" x2="8" y2="17" />
-                            </svg>
-                          </span>
-                          <span className="history-note-text">{entry.rec.text}</span>
-                          <span className="history-time">{formatTimestamp(entry.rec.timestamp)}</span>
-                        </div>
-                      )}
-                      <button
-                        className="history-delete-btn"
-                        onClick={e => { e.stopPropagation(); handleDeleteEntry(entry) }}
-                        aria-label="Delete entry"
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  )
-                })
+                      )
+                    })}
+                  </div>
+                )
               )}
             </div>
           </div>
@@ -506,13 +512,50 @@ function formatElapsed(ms: number): string {
   return `${dd}:${String(hh % 24).padStart(2, '0')}:${String(mm % 60).padStart(2, '0')}:${String(ss % 60).padStart(2, '0')}`
 }
 
-function formatTimestamp(ts: number): string {
+type DayGroup = {
+  label: string
+  entries: HistoryEntry[]
+  showSeconds: boolean
+}
+
+function groupByDay(entries: HistoryEntry[]): DayGroup[] {
+  const groups: DayGroup[] = []
+  let currentKey = ''
+  let currentGroup: DayGroup | null = null
+
+  for (const entry of entries) {
+    const d = new Date(entry.rec.timestamp)
+    const dayKey = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`
+    if (dayKey !== currentKey) {
+      currentKey = dayKey
+      currentGroup = {
+        label: d.toLocaleDateString(undefined, { month: 'long', day: 'numeric' }),
+        entries: [],
+        showSeconds: false,
+      }
+      groups.push(currentGroup)
+    }
+    currentGroup!.entries.push(entry)
+  }
+
+  for (const group of groups) {
+    const timestamps = group.entries.map(e => e.rec.timestamp)
+    for (let i = 1; i < timestamps.length; i++) {
+      if (Math.abs(timestamps[i - 1] - timestamps[i]) < 60_000) {
+        group.showSeconds = true
+        break
+      }
+    }
+  }
+
+  return groups
+}
+
+function formatTimeOnly(ts: number, showSeconds: boolean): string {
   const d = new Date(ts)
-  return d.toLocaleString(undefined, {
-    month: 'short',
-    day: 'numeric',
+  return d.toLocaleTimeString(undefined, {
     hour: '2-digit',
     minute: '2-digit',
-    second: '2-digit',
+    ...(showSeconds ? { second: '2-digit' } : {}),
   })
 }
