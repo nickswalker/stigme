@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import { useCounter } from './useCounter'
 import { getTapsForCounter, getNotes, addNote, type Counter, type TapRecord, type NoteRecord } from './db'
 import { NoteModal } from './NoteModal'
@@ -21,19 +21,71 @@ interface CellProps {
   onCounterUpdate: (counter: Counter) => void
 }
 
+function formatElapsed(ms: number): string {
+  const totalS = ms / 1000
+  const ss = Math.floor(totalS)
+  const mm = Math.floor(ss / 60)
+  const hh = Math.floor(mm / 60)
+  const dd = Math.floor(hh / 24)
+  if (mm === 0) return `${ss}.${Math.floor((ms % 1000) / 100)}`
+  if (hh === 0) return `${mm}:${String(ss % 60).padStart(2, '0')}`
+  if (dd === 0) return `${hh}:${String(mm % 60).padStart(2, '0')}:${String(ss % 60).padStart(2, '0')}`
+  return `${dd}:${String(hh % 24).padStart(2, '0')}:${String(mm % 60).padStart(2, '0')}:${String(ss % 60).padStart(2, '0')}`
+}
+
 function MultiCounterCell({ counter, onFlash, onCounterUpdate }: CellProps) {
   const hue = BUTTON_HUES[(counter.colorIndex ?? 0) % BUTTON_HUES.length]
   const { count, loading, increment, decrement, undo, canUndo } = useCounter(counter.id)
   const [showNote, setShowNote] = useState(false)
   const [, forceUpdate] = useState(0)
+  const [streak, setStreak] = useState(0)
+  const streakTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const lastTapAtRef = useRef<number | null>(null)
+  const lastElapsedUpdateRef = useRef<number>(0)
+  const [elapsed, setElapsed] = useState<number | null>(null)
+
+  useEffect(() => {
+    if (loading) return
+    getTapsForCounter(counter.id).then(taps => {
+      if (taps.length > 0) {
+        lastTapAtRef.current = Math.max(...taps.map(t => t.timestamp))
+      }
+    })
+  }, [counter.id, loading])
+
+  useEffect(() => {
+    let rafId: number
+    function tick() {
+      const now = Date.now()
+      const last = lastTapAtRef.current
+      if (last != null) {
+        const ms = now - last
+        const interval = ms < 60_000 ? 100 : 1_000
+        if (now - lastElapsedUpdateRef.current >= interval) {
+          setElapsed(ms)
+          lastElapsedUpdateRef.current = now
+        }
+      }
+      rafId = requestAnimationFrame(tick)
+    }
+    rafId = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(rafId)
+  }, [])
 
   const handleTap = useCallback(async () => {
     playTap(counter.colorIndex ?? 0, 1)
     await increment()
+    const now = Date.now()
+    lastTapAtRef.current = now
+    lastElapsedUpdateRef.current = now
+    setElapsed(0)
     forceUpdate(n => n + 1)
     onFlash(hue)
     if ('vibrate' in navigator) navigator.vibrate(10)
     onCounterUpdate({ ...counter })
+    setStreak(s => s + 1)
+    if (streakTimer.current) clearTimeout(streakTimer.current)
+    streakTimer.current = setTimeout(() => setStreak(0), 1500)
   }, [increment, hue, onFlash, counter, onCounterUpdate])
 
   const handleDecrement = useCallback(async () => {
@@ -58,6 +110,7 @@ function MultiCounterCell({ counter, onFlash, onCounterUpdate }: CellProps) {
   return (
     <div className="multi-cell">
       <div className="cell-count">{count.toLocaleString()}</div>
+      {elapsed != null && <div className="cell-elapsed">{formatElapsed(elapsed)}</div>}
       <button
         className="cell-tap-btn"
         style={{ '--btn-hue': hue } as React.CSSProperties}
@@ -65,6 +118,7 @@ function MultiCounterCell({ counter, onFlash, onCounterUpdate }: CellProps) {
         aria-label={`Tap ${counter.name}`}
       >
         <span className="cell-name">{counter.name}</span>
+        {streak >= 2 && <span className="cell-streak">{streak}</span>}
       </button>
       <div className="cell-controls">
         <button className="cell-ctrl" onClick={handleDecrement} aria-label="Decrement">
@@ -96,8 +150,8 @@ function MultiCounterCell({ counter, onFlash, onCounterUpdate }: CellProps) {
 }
 
 type HistoryEntry =
-  | { kind: 'tap'; rec: TapRecord }
-  | { kind: 'note'; rec: NoteRecord }
+  | { kind: 'tap'; rec: TapRecord; counterName: string; counterHue: number }
+  | { kind: 'note'; rec: NoteRecord; counterHue: number }
 
 export function MultiCounterView({ counters, multiViewIds, onMultiViewIdsChange, onShowList, onCounterUpdate }: Props) {
   const [editing, setEditing] = useState(false)
@@ -111,6 +165,8 @@ export function MultiCounterView({ counters, multiViewIds, onMultiViewIdsChange,
     .map(id => counters.find(c => c.id === id))
     .filter(Boolean) as Counter[]
 
+  const is2up = cells.length <= 2
+  const totalSlots = is2up ? 2 : 4
   const availableToAdd = counters.filter(c => !multiViewIds.includes(c.id))
 
   const handleFlash = useCallback((hue: number) => {
@@ -128,26 +184,44 @@ export function MultiCounterView({ counters, multiViewIds, onMultiViewIdsChange,
   }, [multiViewIds, onMultiViewIdsChange])
 
   const openHistory = useCallback(async () => {
+    const counterMap = new Map(counters.map(c => [c.id, c]))
+    const cellNames = new Map(cells.map(c => [c.name, c]))
     const [allTaps, notes] = await Promise.all([
       Promise.all(cells.map(c => getTapsForCounter(c.id))).then(r => r.flat()),
       getNotes(),
     ])
-    const cellNames = new Set(cells.map(c => c.name))
     const entries: HistoryEntry[] = [
-      ...allTaps.map(rec => ({ kind: 'tap' as const, rec })),
-      ...notes.filter(n => cellNames.has(n.counterName)).map(rec => ({ kind: 'note' as const, rec })),
+      ...allTaps.map(rec => {
+        const c = counterMap.get(rec.counterId)
+        return {
+          kind: 'tap' as const,
+          rec,
+          counterName: c?.name ?? rec.counterId,
+          counterHue: BUTTON_HUES[(c?.colorIndex ?? 0) % BUTTON_HUES.length],
+        }
+      }),
+      ...notes
+        .filter(n => cellNames.has(n.counterName))
+        .map(rec => {
+          const c = cellNames.get(rec.counterName)
+          return {
+            kind: 'note' as const,
+            rec,
+            counterHue: BUTTON_HUES[(c?.colorIndex ?? 0) % BUTTON_HUES.length],
+          }
+        }),
     ].sort((a, b) => b.rec.timestamp - a.rec.timestamp)
     setHistory(entries)
     setShowHistory(true)
-  }, [cells])
+  }, [cells, counters])
 
   const downloadHistory = useCallback(async () => {
+    const counterMap = new Map(counters.map(c => [c.id, c.name]))
+    const cellNames = new Set(cells.map(c => c.name))
     const [allTaps, notes] = await Promise.all([
       Promise.all(cells.map(c => getTapsForCounter(c.id))).then(r => r.flat()),
       getNotes(),
     ])
-    const counterMap = new Map(counters.map(c => [c.id, c.name]))
-    const cellNames = new Set(cells.map(c => c.name))
     const tapRows = allTaps.map(r => ({
       ts: r.timestamp,
       cols: [counterMap.get(r.counterId) ?? r.counterId, r.value >= 0 ? 'increment' : 'decrement', String(r.value), ''],
@@ -225,9 +299,9 @@ export function MultiCounterView({ counters, multiViewIds, onMultiViewIdsChange,
         </div>
       )}
 
-      {/* 2×2 Grid */}
-      <div className="multi-grid">
-        {[0, 1, 2, 3].map(slot => {
+      {/* Grid: 2-up (1 row) or 4-up (2 rows) based on cell count */}
+      <div className={`multi-grid ${is2up ? 'multi-grid--2up' : 'multi-grid--4up'}`}>
+        {Array.from({ length: totalSlots }, (_, slot) => {
           const counter = cells[slot]
           if (counter) {
             return (
@@ -325,10 +399,13 @@ export function MultiCounterView({ counters, multiViewIds, onMultiViewIdsChange,
               ) : (
                 history.map((entry, i) => {
                   const key = entry.kind === 'tap' ? `tap-${entry.rec.id}` : `note-${entry.rec.id ?? i}`
+                  const dotStyle = { background: `hsl(${entry.counterHue}, 70%, 58%)` }
                   return (
                     <div key={key}>
                       {entry.kind === 'tap' ? (
                         <div className="history-item">
+                          <span className="history-counter-dot" style={dotStyle} />
+                          <span className="history-counter-name">{entry.counterName}</span>
                           <span className={`history-value ${entry.rec.value >= 0 ? 'positive' : 'negative'}`}>
                             {entry.rec.value >= 0 ? '+' : ''}{entry.rec.value}
                           </span>
@@ -336,6 +413,7 @@ export function MultiCounterView({ counters, multiViewIds, onMultiViewIdsChange,
                         </div>
                       ) : (
                         <div className="history-item history-item--note">
+                          <span className="history-counter-dot" style={dotStyle} />
                           <span className="history-note-icon">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="14" height="14">
                               <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
