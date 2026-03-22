@@ -30,6 +30,8 @@ interface Props {
   onShowMulti: () => void
   onReorder: (counters: Counter[]) => void
   onRename: (id: string, name: string) => void
+  wakeLockEnabled: boolean
+  onToggleWakeLock: () => void
 }
 
 interface RowProps {
@@ -120,7 +122,7 @@ function SortableRow({ counter, colorIndex, activeId, editing, showDelete, onSel
   )
 }
 
-export function CounterList({ counters, activeId, onSelect, onAdd, onDelete, onClose, onShowMulti, onReorder, onRename }: Props) {
+export function CounterList({ counters, activeId, onSelect, onAdd, onDelete, onClose, onShowMulti, onReorder, onRename, wakeLockEnabled, onToggleWakeLock }: Props) {
   const [editing, setEditing] = useState(false)
   const [webSpeech, setWebSpeech] = useState(getPreferWebSpeech)
 
@@ -252,6 +254,19 @@ export function CounterList({ counters, activeId, onSelect, onAdd, onDelete, onC
               <polyline points="7 10 12 15 17 10" />
               <line x1="12" y1="15" x2="12" y2="3" />
             </svg>
+          </button>
+
+          <div className="list-settings-label" style={{ marginTop: 24 }}>Display</div>
+          <button className="settings-toggle-row" onClick={onToggleWakeLock}>
+            <div className="settings-toggle-text">
+              <span className="settings-toggle-title">Keep screen on</span>
+              <span className="settings-toggle-desc">
+                Prevents the screen from sleeping while counting.
+              </span>
+            </div>
+            <div className={`toggle-switch ${'wakeLock' in navigator ? '' : 'unsupported '}${wakeLockEnabled ? 'on' : ''}`} aria-hidden="true">
+              <div className="toggle-thumb" />
+            </div>
           </button>
 
           <div className="list-settings-label" style={{ marginTop: 24 }}>Notes</div>

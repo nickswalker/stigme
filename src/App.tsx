@@ -5,6 +5,7 @@ import { CounterList } from './CounterList'
 import { MultiCounterView } from './MultiCounterView'
 import { getCounters, saveCounter, saveCounters, deleteCounter, type Counter } from './db'
 import { BUTTON_HUES } from './colors'
+import { getPreferWakeLock, WAKE_LOCK_KEY } from './SettingsView'
 import './App.css'
 
 function startVT(dir: string, fn: () => void) {
@@ -29,7 +30,31 @@ export default function App() {
   const [activeId, setActiveId] = useState<string | null>(null)
   const [view, setView] = useState<'counter' | 'list' | 'multi'>('counter')
   const [multiViewIds, setMultiViewIds] = useState<string[]>(loadMultiViewIds)
+  const [wakeLockEnabled, setWakeLockEnabled] = useState(getPreferWakeLock)
   const touchStartRef = useRef<{ x: number; y: number } | null>(null)
+
+  useEffect(() => {
+    if (!wakeLockEnabled || !('wakeLock' in navigator)) return
+    let sentinel: WakeLockSentinel | null = null
+    async function acquire() {
+      try { sentinel = await (navigator as any).wakeLock.request('screen') } catch { /* denied or unavailable */ }
+    }
+    acquire()
+    function onVisibility() { if (document.visibilityState === 'visible') acquire() }
+    document.addEventListener('visibilitychange', onVisibility)
+    return () => {
+      document.removeEventListener('visibilitychange', onVisibility)
+      sentinel?.release()
+    }
+  }, [wakeLockEnabled])
+
+  const toggleWakeLock = useCallback(() => {
+    setWakeLockEnabled(prev => {
+      const next = !prev
+      localStorage.setItem(WAKE_LOCK_KEY, String(next))
+      return next
+    })
+  }, [])
 
   useEffect(() => {
     getCounters().then(list => {
@@ -185,6 +210,8 @@ export default function App() {
           onShowMulti={() => startVT('to-counter', () => setView('multi'))}
           onReorder={onReorder}
           onRename={onRename}
+          wakeLockEnabled={wakeLockEnabled}
+          onToggleWakeLock={toggleWakeLock}
         />
       )}
     </div>
