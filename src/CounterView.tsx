@@ -245,7 +245,8 @@ export function CounterView({ counterId, colorIndex, prevHue, nextHue, onShowLis
 
   return (
     <div className="counter-view">
-      {/* Header */}
+      {/* Header + floating settings panel */}
+      <div className="counter-top">
       <div className="counter-header">
         <button className="icon-btn" onClick={onShowList} aria-label="Counters">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -279,36 +280,39 @@ export function CounterView({ counterId, colorIndex, prevHue, nextHue, onShowLis
         </button>
       </div>
 
-      {/* Settings panel */}
       {showSettings && (
-        <div className="settings-panel">
-          <div className="settings-row">
-            <span>Step</span>
-            <div className="step-control">
-              <button className="step-btn" onClick={() => setStep(Math.max(1, (counter?.step ?? 1) - 1))}>−</button>
-              <span className="step-value">{counter?.step ?? 1}</span>
-              <button className="step-btn" onClick={() => setStep((counter?.step ?? 1) + 1)}>+</button>
+          <>
+            <div className="settings-backdrop" onClick={() => setShowSettings(false)} />
+            <div className="settings-panel">
+              <div className="settings-row">
+                <span>Step</span>
+                <div className="step-control">
+                  <button className="step-btn" onClick={() => setStep(Math.max(1, (counter?.step ?? 1) - 1))}>−</button>
+                  <span className="step-value">{counter?.step ?? 1}</span>
+                  <button className="step-btn" onClick={() => setStep((counter?.step ?? 1) + 1)}>+</button>
+                </div>
+              </div>
+              <button className="settings-row history-btn" onClick={openHistory}>
+                View history
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="chevron">
+                  <polyline points="9 18 15 12 9 6" />
+                </svg>
+              </button>
+              <button className="settings-row history-btn" onClick={downloadHistory}>
+                Download history (.tsv)
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="chevron">
+                  <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
+                  <polyline points="7 10 12 15 17 10" />
+                  <line x1="12" y1="15" x2="12" y2="3" />
+                </svg>
+              </button>
+              <button className="settings-row settings-reset-btn" onClick={() => setShowResetModal(true)}>
+                Reset all data
+              </button>
             </div>
-          </div>
-          <button className="settings-row history-btn" onClick={openHistory}>
-            View history
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="chevron">
-              <polyline points="9 18 15 12 9 6" />
-            </svg>
-          </button>
-          <button className="settings-row history-btn" onClick={downloadHistory}>
-            Download history (.tsv)
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="chevron">
-              <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
-              <polyline points="7 10 12 15 17 10" />
-              <line x1="12" y1="15" x2="12" y2="3" />
-            </svg>
-          </button>
-          <button className="settings-row settings-reset-btn" onClick={() => setShowResetModal(true)}>
-            Reset all data
-          </button>
-        </div>
-      )}
+          </>
+        )}
+      </div>
 
       {/* Count display + tap button */}
       <div className="counter-middle">
