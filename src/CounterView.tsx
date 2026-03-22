@@ -147,6 +147,7 @@ export function CounterView({ counterId, colorIndex, prevHue, nextHue, onShowLis
   const handleSaveNote = useCallback(async (text: string) => {
     await addNote(text, counter?.name ?? 'Counter')
     setShowNote(false)
+    requestAnimationFrame(() => window.scrollTo(0, 0))
   }, [counter])
 
   const startRename = useCallback(() => {
@@ -387,7 +388,11 @@ export function CounterView({ counterId, colorIndex, prevHue, nextHue, onShowLis
 
       {/* Note modal */}
       {showNote && (
-        <NoteModal onSave={handleSaveNote} onClose={() => setShowNote(false)} />
+        <NoteModal onSave={handleSaveNote} onClose={() => {
+          setShowNote(false)
+          // iOS keyboard dismissal leaves a lingering scroll offset — reset it
+          requestAnimationFrame(() => window.scrollTo(0, 0))
+        }} />
       )}
 
       {/* Tap flash */}
