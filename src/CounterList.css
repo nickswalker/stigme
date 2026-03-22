@@ -6,6 +6,7 @@
 }
 
 .list-header {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -17,6 +18,10 @@
 }
 
 .list-title {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  pointer-events: none;
   margin: 0;
   font-size: 18px;
   font-weight: 600;
