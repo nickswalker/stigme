@@ -53,7 +53,6 @@ function SortableRow({ counter, hue, activeId, editing, showDelete, onSelect, on
   const [isRenaming, setIsRenaming] = useState(false)
   const [nameInput, setNameInput] = useState('')
   const inputRef = useRef<HTMLInputElement>(null)
-  const colorInputRef = useRef<HTMLInputElement>(null)
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -89,19 +88,15 @@ function SortableRow({ counter, hue, activeId, editing, showDelete, onSelect, on
       )}
       {editing ? (
         <div className="list-item-main">
-          <button
-            className="list-item-dot list-item-dot--pickable"
-            onClick={() => colorInputRef.current?.click()}
-            aria-label="Change color"
-          />
-          <input
-            ref={colorInputRef}
-            type="color"
-            value={hueToHex(hue)}
-            onChange={e => onRecolor(counter.id, hexToHue(e.target.value))}
-            style={{ position: 'absolute', width: 0, height: 0, opacity: 0, pointerEvents: 'none' }}
-            tabIndex={-1}
-          />
+          <label className="list-item-dot list-item-dot--pickable" aria-label="Change color">
+            <input
+              type="color"
+              value={hueToHex(hue)}
+              onChange={e => onRecolor(counter.id, hexToHue(e.target.value))}
+              style={{ position: 'absolute', width: 0, height: 0, opacity: 0, pointerEvents: 'none' }}
+              tabIndex={-1}
+            />
+          </label>
           {isRenaming ? (
             <form onSubmit={e => { e.preventDefault(); submitRename() }} style={{ flex: 1 }}>
               <input
