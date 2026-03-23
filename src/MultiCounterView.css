@@ -170,7 +170,7 @@
   font-size: clamp(11px, 3vw, 15px);
   font-weight: 600;
   color: rgba(255, 255, 255, 0.9);
-  color: color-contrast(hsl(var(--btn-hue) 75% 58%) vs white, black);
+  color: color-contrast(hsl(var(--btn-hue) 75% 58%) vs rgba(255, 255, 255, 0.9), rgba(0, 0, 0, 0.9));
   pointer-events: none;
   text-align: center;
   overflow: hidden;
