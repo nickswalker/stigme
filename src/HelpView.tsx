@@ -1,4 +1,4 @@
-import { IconChevronLeft } from './Icons'
+import { IconChevronLeft, IconMenu, IconDecrement, IconUndo, IconNote, IconReset, IconSettings } from './Icons'
 import './HelpView.css'
 
 interface Props {
@@ -20,13 +20,13 @@ export function HelpView({ onClose }: Props) {
         <section className="help-section">
           <h2>Counter</h2>
           <p>Tap the big button to count. The number and a timestamp are recorded each tap.</p>
-          <p>Below the button are controls to <strong>decrement</strong>, <strong>undo</strong> the last action, add a text <strong>note</strong>, or <strong>reset</strong> the count (tap reset twice to confirm).</p>
-          <p>Tap the counter name at the top to rename it. Open the gear menu to change the step size, view history, or download a TSV of all events.</p>
+          <p>Below the button are controls to <span className="help-icon-label"><IconDecrement className="help-icon" /><strong>decrement</strong></span>, <span className="help-icon-label"><IconUndo className="help-icon" /><strong>undo</strong></span> the last action, add a text <span className="help-icon-label"><IconNote className="help-icon" /><strong>note</strong></span>, or <span className="help-icon-label"><IconReset className="help-icon" /><strong>reset</strong></span> the count (tap reset twice to confirm).</p>
+          <p>Tap the counter name at the top to rename it. Open the <span className="help-icon-label"><IconSettings className="help-icon" />gear menu</span> to change the step size, view history, or download a TSV of all events.</p>
         </section>
 
         <section className="help-section">
           <h2>Counter list</h2>
-          <p>Open the counter list with the menu icon in the top left. From there you can add, rename, reorder, recolor, or delete counters.</p>
+          <p>Open the counter list with the <span className="help-icon-label"><IconMenu className="help-icon" />menu icon</span> in the top left. From there you can add, rename, reorder, recolor, or delete counters.</p>
           <p>Swipe left or right on the counter screen to switch between counters.</p>
         </section>
 
