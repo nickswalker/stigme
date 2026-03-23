@@ -109,17 +109,19 @@ function MultiCounterCell({ counter, onFlash, onCounterUpdate }: CellProps) {
 
   return (
     <div className="multi-cell">
-      <div className="cell-count">{count.toLocaleString()}</div>
-      {elapsed != null && <div className="cell-elapsed">{formatElapsed(elapsed)}</div>}
-      <button
-        className="cell-tap-btn"
-        style={{ '--btn-hue': hue } as React.CSSProperties}
-        onClick={handleTap}
-        aria-label={`Tap ${counter.name}`}
-      >
-        <span className="cell-name">{counter.name}</span>
-        {streak >= 2 && <span className="cell-streak">{streak}</span>}
-      </button>
+      <div className="cell-main">
+        <div className="cell-count">{count.toLocaleString()}</div>
+        {elapsed != null && <div className="cell-elapsed">{formatElapsed(elapsed)}</div>}
+        <button
+          className="cell-tap-btn"
+          style={{ '--btn-hue': hue } as React.CSSProperties}
+          onClick={handleTap}
+          aria-label={`Tap ${counter.name}`}
+        >
+          <span className="cell-name">{counter.name}</span>
+          {streak >= 2 && <span className="cell-streak">{streak}</span>}
+        </button>
+      </div>
       <div className="cell-controls">
         <button className="cell-ctrl" onClick={handleDecrement} aria-label="Decrement">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
