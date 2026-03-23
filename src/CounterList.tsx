@@ -257,26 +257,25 @@ export function CounterList({ counters, activeId, onSelect, onAdd, onDelete, onC
                   onRecolor={onRecolor}
                 />
               ))}
+              <div className="list-item">
+                <button className={`multi-counter-row${fromMulti ? ' active' : ''}`} onClick={onShowMulti}>
+                  <span className="multi-counter-row-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" width="20" height="20">
+                      <rect x="3" y="3" width="8" height="8" rx="1.5" />
+                      <rect x="13" y="3" width="8" height="8" rx="1.5" />
+                      <rect x="3" y="13" width="8" height="8" rx="1.5" />
+                      <rect x="13" y="13" width="8" height="8" rx="1.5" />
+                    </svg>
+                  </span>
+                  <span className="multi-counter-row-label">Multi Counter</span>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="16" height="16" className="multi-counter-row-chevron">
+                    <polyline points="9 18 15 12 9 6" />
+                  </svg>
+                </button>
+              </div>
             </div>
           </SortableContext>
         </DndContext>
-
-        <div className="list-body list-body--special">
-          <button className={`multi-counter-row${fromMulti ? ' active' : ''}`} onClick={onShowMulti}>
-            <span className="multi-counter-row-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" width="20" height="20">
-                <rect x="3" y="3" width="8" height="8" rx="1.5" />
-                <rect x="13" y="3" width="8" height="8" rx="1.5" />
-                <rect x="3" y="13" width="8" height="8" rx="1.5" />
-                <rect x="13" y="13" width="8" height="8" rx="1.5" />
-              </svg>
-            </span>
-            <span className="multi-counter-row-label">Multi Counter</span>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="16" height="16" className="multi-counter-row-chevron">
-              <polyline points="9 18 15 12 9 6" />
-            </svg>
-          </button>
-        </div>
 
         <div className="list-settings">
           <div className="list-settings-label">Display</div>
