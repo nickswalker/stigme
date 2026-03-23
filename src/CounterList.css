@@ -77,6 +77,72 @@
   padding: 8px 0;
 }
 
+.install-prompt {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px 14px 20px;
+  margin: 12px 0 4px;
+  background: var(--bg2);
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+
+.install-prompt-text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 14px;
+  line-height: 1.3;
+}
+
+.install-prompt-text strong {
+  font-size: 15px;
+}
+
+.install-prompt-text span {
+  color: var(--text-dim);
+}
+
+.install-prompt-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.install-prompt-how {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.install-prompt-how:active {
+  opacity: 0.85;
+}
+
+.install-prompt-dismiss {
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  padding: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  border-radius: 6px;
+}
+
+.install-prompt-dismiss:active {
+  color: var(--text);
+}
+
 .list-settings {
   padding: 24px 0;
   padding-bottom: max(24px, env(safe-area-inset-bottom));
