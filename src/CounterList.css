@@ -253,6 +253,10 @@ a.settings-action-row {
   border-bottom: 1px solid var(--border);
 }
 
+.list-item:first-child {
+  border-top: 1px solid var(--border);
+}
+
 .list-item:last-child {
   border-bottom: none;
 }
