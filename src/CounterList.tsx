@@ -18,6 +18,8 @@ import { CSS } from '@dnd-kit/utilities'
 import { getCounters, getAllTaps, getNotes, clearAllData, type Counter } from './db'
 import { getPreferWebSpeech, PREF_KEY, getPreferSound, SOUND_KEY } from './SettingsView'
 import { counterHue, hueToHex, hexToHue } from './colors'
+import { downloadAsTSV } from './utils'
+import { IconClose, IconPlus, IconEdit, IconTrash, IconDragHandle, IconDownload, IconChevronRight, IconExternalLink, IconMultiGrid } from './Icons'
 import './CounterList.css'
 
 interface Props {
@@ -83,10 +85,7 @@ function SortableRow({ counter, hue, activeId, editing, showDelete, onSelect, on
     >
       {editing && (
         <span className="drag-handle" {...attributes} {...listeners} aria-label="Drag to reorder">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="20" height="20">
-            <line x1="3" y1="8" x2="21" y2="8" />
-            <line x1="3" y1="16" x2="21" y2="16" />
-          </svg>
+          <IconDragHandle width="20" height="20" />
         </span>
       )}
       {editing ? (
@@ -129,12 +128,7 @@ function SortableRow({ counter, hue, activeId, editing, showDelete, onSelect, on
           onClick={() => onDelete(counter.id)}
           aria-label={`Delete ${counter.name}`}
         >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <polyline points="3 6 5 6 21 6" />
-            <path d="M19 6l-1 14H6L5 6" />
-            <path d="M10 11v6M14 11v6" />
-            <path d="M9 6V4h6v2" />
-          </svg>
+          <IconTrash />
         </button>
       )}
     </div>
@@ -186,19 +180,12 @@ export function CounterList({ counters, activeId, onSelect, onAdd, onDelete, onC
       ts: n.timestamp,
       cols: [n.counterName, 'note', '', n.text.replace(/\t|\n/g, ' ')],
     }))
-    const rows = [
+    downloadAsTSV([
       ['Counter', 'Action', 'Value', 'Note', 'Timestamp'].join('\t'),
       ...[...tapRows, ...noteRows]
         .sort((a, b) => a.ts - b.ts)
         .map(r => [...r.cols, new Date(r.ts).toISOString()].join('\t')),
-    ]
-    const blob = new Blob([rows.join('\n')], { type: 'text/tab-separated-values' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = 'all_history.tsv'
-    a.click()
-    URL.revokeObjectURL(url)
+    ], 'all_history.tsv')
   }, [])
 
   async function handleResetAll() {
@@ -214,10 +201,7 @@ export function CounterList({ counters, activeId, onSelect, onAdd, onDelete, onC
           {editing ? (
             <span style={{ fontSize: 15, fontWeight: 600, color: 'var(--accent)', padding: '0 4px' }}>Done</span>
           ) : (
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <line x1="18" y1="6" x2="6" y2="18" />
-              <line x1="6" y1="6" x2="18" y2="18" />
-            </svg>
+            <IconClose />
           )}
         </button>
         <h1 className="list-title">Counters</h1>
@@ -225,15 +209,10 @@ export function CounterList({ counters, activeId, onSelect, onAdd, onDelete, onC
           {!editing && (
             <>
               <button className="icon-btn" onClick={onAdd} aria-label="Add counter">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <line x1="12" y1="5" x2="12" y2="19" />
-                  <line x1="5" y1="12" x2="19" y2="12" />
-                </svg>
+                <IconPlus />
               </button>
               <button className="icon-btn" onClick={() => setEditing(true)} aria-label="Edit counters">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M17 3a2.828 2.828 0 114 4L7.5 20.5 2 22l1.5-5.5L17 3z" />
-                </svg>
+                <IconEdit />
               </button>
             </>
           )}
@@ -260,35 +239,17 @@ export function CounterList({ counters, activeId, onSelect, onAdd, onDelete, onC
               ))}
               <div className="list-item">
                 <button className={`multi-counter-row${fromMulti ? ' active' : ''}`} onClick={onShowMulti}>
-                  <span className="multi-counter-row-icon">
-                    {(() => {
-                      const slots = [0, 1, 2, 3].map(i => {
+                  <span className="multi-counter-row-icon" style={{ opacity: fromMulti ? 1 : 0.5 }}>
+                    <IconMultiGrid
+                      width="20" height="20"
+                      slots={[0, 1, 2, 3].map(i => {
                         const c = counters.find(c => c.id === multiViewIds[i])
-                        return c ? `hsl(${counterHue(c)}, 70%, 58%)` : 'currentColor'
-                      })
-                      const positions = [
-                        { x: 3, y: 3 }, { x: 13, y: 3 },
-                        { x: 3, y: 13 }, { x: 13, y: 13 },
-                      ]
-                      return (
-                        <svg viewBox="0 0 24 24" width="20" height="20">
-                          {positions.map((pos, i) => (
-                            <rect
-                              key={i}
-                              x={pos.x} y={pos.y}
-                              width="8" height="8" rx="1.5"
-                              fill={slots[i]}
-                              opacity={slots[i] === 'currentColor' ? 0.25 : 1}
-                            />
-                          ))}
-                        </svg>
-                      )
-                    })()}
+                        return c ? `hsl(${counterHue(c)}, 70%, 58%)` : ''
+                      })}
+                    />
                   </span>
                   <span className="multi-counter-row-label">Multi Counter</span>
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="16" height="16" className="multi-counter-row-chevron">
-                    <polyline points="9 18 15 12 9 6" />
-                  </svg>
+                  <IconChevronRight width="16" height="16" className="multi-counter-row-chevron" />
                 </button>
               </div>
             </div>
@@ -336,11 +297,7 @@ export function CounterList({ counters, activeId, onSelect, onAdd, onDelete, onC
           <div className="list-settings-label" style={{ marginTop: 24 }}>Data</div>
           <button className="settings-action-row" onClick={downloadAllHistory}>
             <span>Download all history (.tsv)</span>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="18" height="18">
-              <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
-              <polyline points="7 10 12 15 17 10" />
-              <line x1="12" y1="15" x2="12" y2="3" />
-            </svg>
+            <IconDownload width="18" height="18" />
           </button>
           <button className="settings-action-row settings-action-row--danger" onClick={() => setShowResetModal(true)}>
             Reset all data
@@ -349,17 +306,11 @@ export function CounterList({ counters, activeId, onSelect, onAdd, onDelete, onC
           <div className="list-settings-label" style={{ marginTop: 24 }}>About</div>
           <button className="settings-action-row" onClick={onShowHelp}>
             <span>How to use</span>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="chevron">
-              <polyline points="9 18 15 12 9 6" />
-            </svg>
+            <IconChevronRight className="chevron" />
           </button>
           <a className="settings-action-row" href="https://github.com/nickswalker/stigme" target="_blank" rel="noopener noreferrer">
             <span>Code</span>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="18" height="18">
-              <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6" />
-              <polyline points="15 3 21 3 21 9" />
-              <line x1="10" y1="14" x2="21" y2="3" />
-            </svg>
+            <IconExternalLink width="18" height="18" />
           </a>
         </div>
       </div>

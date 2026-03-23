@@ -5,6 +5,9 @@ import { HistoryModal, type HistoryEntry } from './HistoryModal'
 import { NoteModal } from './NoteModal'
 import { playTap } from './tapSound'
 import { counterHue } from './colors'
+import { useElapsedTimer } from './useElapsedTimer'
+import { formatElapsed, downloadAsTSV } from './utils'
+import { IconMenu, IconSettings, IconEdit, IconClose, IconChevronRight, IconDownload, IconDecrement, IconUndo, IconNote, IconPlus } from './Icons'
 import './MultiCounterView.css'
 import './CounterView.css'
 
@@ -22,18 +25,6 @@ interface CellProps {
   onCounterUpdate: (counter: Counter) => void
 }
 
-function formatElapsed(ms: number): string {
-  const totalS = ms / 1000
-  const ss = Math.floor(totalS)
-  const mm = Math.floor(ss / 60)
-  const hh = Math.floor(mm / 60)
-  const dd = Math.floor(hh / 24)
-  if (mm === 0) return `${ss}.${Math.floor((ms % 1000) / 100)}`
-  if (hh === 0) return `${mm}:${String(ss % 60).padStart(2, '0')}`
-  if (dd === 0) return `${hh}:${String(mm % 60).padStart(2, '0')}:${String(ss % 60).padStart(2, '0')}`
-  return `${dd}:${String(hh % 24).padStart(2, '0')}:${String(mm % 60).padStart(2, '0')}:${String(ss % 60).padStart(2, '0')}`
-}
-
 function MultiCounterCell({ counter, onFlash, onCounterUpdate }: CellProps) {
   const hue = counterHue(counter)
   const { count, loading, increment, decrement, undo, canUndo } = useCounter(counter.id)
@@ -41,9 +32,7 @@ function MultiCounterCell({ counter, onFlash, onCounterUpdate }: CellProps) {
   const [, forceUpdate] = useState(0)
   const [streak, setStreak] = useState(0)
   const streakTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const lastTapAtRef = useRef<number | null>(null)
-  const lastElapsedUpdateRef = useRef<number>(0)
-  const [elapsed, setElapsed] = useState<number | null>(null)
+  const { elapsed, setElapsed, lastTapAtRef, lastElapsedUpdateRef } = useElapsedTimer()
 
   useEffect(() => {
     if (loading) return
@@ -53,25 +42,6 @@ function MultiCounterCell({ counter, onFlash, onCounterUpdate }: CellProps) {
       }
     })
   }, [counter.id, loading])
-
-  useEffect(() => {
-    let rafId: number
-    function tick() {
-      const now = Date.now()
-      const last = lastTapAtRef.current
-      if (last != null) {
-        const ms = now - last
-        const interval = ms < 60_000 ? 100 : 1_000
-        if (now - lastElapsedUpdateRef.current >= interval) {
-          setElapsed(ms)
-          lastElapsedUpdateRef.current = now
-        }
-      }
-      rafId = requestAnimationFrame(tick)
-    }
-    rafId = requestAnimationFrame(tick)
-    return () => cancelAnimationFrame(rafId)
-  }, [])
 
   const handleTap = useCallback(async () => {
     playTap(hue, 1)
@@ -125,9 +95,7 @@ function MultiCounterCell({ counter, onFlash, onCounterUpdate }: CellProps) {
       </div>
       <div className="cell-controls">
         <button className="cell-ctrl" onClick={handleDecrement} aria-label="Decrement">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-            <line x1="5" y1="12" x2="19" y2="12" />
-          </svg>
+          <IconDecrement />
         </button>
         <button
           className={`cell-ctrl ${!canUndo() ? 'disabled' : ''}`}
@@ -135,16 +103,10 @@ function MultiCounterCell({ counter, onFlash, onCounterUpdate }: CellProps) {
           disabled={!canUndo()}
           aria-label="Undo"
         >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <polyline points="9 14 4 9 9 4" />
-            <path d="M20 20v-7a4 4 0 00-4-4H4" />
-          </svg>
+          <IconUndo />
         </button>
         <button className="cell-ctrl" onClick={() => setShowNote(true)} aria-label="Add note">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
-            <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 7.5-7.5z" />
-          </svg>
+          <IconNote />
         </button>
       </div>
       {showNote && <NoteModal onSave={handleSaveNote} onClose={() => setShowNote(false)} />}
@@ -237,19 +199,12 @@ export function MultiCounterView({ counters, multiViewIds, onMultiViewIdsChange,
     const noteRows = notes
       .filter(n => cellNames.has(n.counterName))
       .map(n => ({ ts: n.timestamp, cols: [n.counterName, 'note', '', n.text.replace(/\t|\n/g, ' ')] }))
-    const rows = [
+    downloadAsTSV([
       ['Counter', 'Action', 'Value', 'Note', 'Timestamp'].join('\t'),
       ...[...tapRows, ...noteRows]
         .sort((a, b) => a.ts - b.ts)
         .map(r => [...r.cols, new Date(r.ts).toISOString()].join('\t')),
-    ]
-    const blob = new Blob([rows.join('\n')], { type: 'text/tab-separated-values' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = 'multi_counter_history.tsv'
-    a.click()
-    URL.revokeObjectURL(url)
+    ], 'multi_counter_history.tsv')
   }, [cells, counters])
 
 
@@ -260,26 +215,17 @@ export function MultiCounterView({ counters, multiViewIds, onMultiViewIdsChange,
       <div className="counter-top">
         <div className="multi-header">
           <button className="icon-btn" onClick={onShowList} aria-label="Back to list">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <line x1="3" y1="6" x2="21" y2="6" />
-              <line x1="3" y1="12" x2="21" y2="12" />
-              <line x1="3" y1="18" x2="21" y2="18" />
-            </svg>
+            <IconMenu />
           </button>
           <h1 className="multi-title">Multi Counter</h1>
           <div style={{ display: 'flex', gap: 4 }}>
             <button className="icon-btn" onClick={() => { setShowSettings(s => !s); setEditing(false) }} aria-label="Settings">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <circle cx="12" cy="12" r="3" />
-                <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z" />
-              </svg>
+              <IconSettings />
             </button>
             <button className="icon-btn" onClick={() => { setEditing(e => !e); setShowSettings(false) }} aria-label={editing ? 'Done' : 'Edit'}>
               {editing
                 ? <span style={{ fontSize: 15, fontWeight: 600, color: 'var(--accent)', padding: '0 4px' }}>Done</span>
-                : <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M17 3a2.828 2.828 0 114 4L7.5 20.5 2 22l1.5-5.5L17 3z" />
-                  </svg>
+                : <IconEdit />
               }
             </button>
           </div>
@@ -292,17 +238,11 @@ export function MultiCounterView({ counters, multiViewIds, onMultiViewIdsChange,
             <div className="settings-panel">
               <button className="settings-row history-btn" onClick={openHistory}>
                 View history
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="chevron">
-                  <polyline points="9 18 15 12 9 6" />
-                </svg>
+                <IconChevronRight className="chevron" />
               </button>
               <button className="settings-row history-btn" onClick={downloadHistory}>
                 Download history (.tsv)
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="chevron">
-                  <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
-                  <polyline points="7 10 12 15 17 10" />
-                  <line x1="12" y1="15" x2="12" y2="3" />
-                </svg>
+                <IconDownload className="chevron" />
               </button>
             </div>
           </>
@@ -318,10 +258,7 @@ export function MultiCounterView({ counters, multiViewIds, onMultiViewIdsChange,
               <div key={counter.id} className="multi-slot">
                 {editing && (
                   <button className="cell-remove-btn" onClick={() => handleRemove(counter.id)} aria-label={`Remove ${counter.name}`}>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" width="16" height="16">
-                      <line x1="18" y1="6" x2="6" y2="18" />
-                      <line x1="6" y1="6" x2="18" y2="18" />
-                    </svg>
+                    <IconClose width="16" height="16" strokeWidth={2.5} />
                   </button>
                 )}
                 <MultiCounterCell
@@ -342,10 +279,7 @@ export function MultiCounterView({ counters, multiViewIds, onMultiViewIdsChange,
             >
               {(isNextSlot || editing) && (
                 <span className="add-slot-icon">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="32" height="32">
-                    <line x1="12" y1="5" x2="12" y2="19" />
-                    <line x1="5" y1="12" x2="19" y2="12" />
-                  </svg>
+                  <IconPlus width="32" height="32" />
                 </span>
               )}
             </button>
@@ -365,10 +299,7 @@ export function MultiCounterView({ counters, multiViewIds, onMultiViewIdsChange,
             <div className="modal-header">
               <h2>Add Counter</h2>
               <button className="icon-btn" onClick={() => setShowPicker(false)}>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <line x1="18" y1="6" x2="6" y2="18" />
-                  <line x1="6" y1="6" x2="18" y2="18" />
-                </svg>
+                <IconClose />
               </button>
             </div>
             {availableToAdd.length === 0 ? (

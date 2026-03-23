@@ -1,3 +1,4 @@
+import { IconChevronLeft } from './Icons'
 import './HelpView.css'
 
 interface Props {
@@ -9,9 +10,7 @@ export function HelpView({ onClose }: Props) {
     <div className="help-view">
       <div className="help-header">
         <button className="icon-btn" onClick={onClose} aria-label="Back">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <polyline points="15 18 9 12 15 6" />
-          </svg>
+          <IconChevronLeft />
         </button>
         <h1 className="help-title">How to use</h1>
         <div style={{ width: 38 }} />
@@ -38,6 +37,11 @@ export function HelpView({ onClose }: Props) {
         </section>
 
         <section className="help-section">
+          <h2>History</h2>
+          <p>Open history from the gear menu to see a timeline of taps and notes grouped by day. Swipe a row left to reveal a delete button for removing individual entries.</p>
+        </section>
+
+        <section className="help-section">
           <h2>Notes</h2>
           <p>Attach a timestamped text note to any counter. Notes appear in history alongside tap events and are included in data exports.</p>
           <p>If you enable Web Speech in settings, the note modal will start listening for dictation automatically.</p>
@@ -46,6 +50,12 @@ export function HelpView({ onClose }: Props) {
         <section className="help-section">
           <h2>Data</h2>
           <p>All data is stored locally on your device. You can export a counter's history or all history at once as a TSV file from the settings menus.</p>
+        </section>
+
+        <section className="help-section">
+          <h2>Install as app</h2>
+          <p>Add this page to your home screen to use it as a full-screen app with no browser chrome. On iOS, tap the Share button in Safari and choose <strong>Add to Home Screen</strong>. On Android, tap the browser menu and choose <strong>Add to Home Screen</strong> or <strong>Install app</strong>.</p>
+          <p>Installing as a PWA keeps the screen from sleeping more reliably, removes the address bar, and makes the app launch instantly from your home screen.</p>
         </section>
       </div>
     </div>
