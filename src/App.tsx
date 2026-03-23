@@ -33,6 +33,7 @@ export default function App() {
   const [wakeLockEnabled, setWakeLockEnabled] = useState(getPreferWakeLock)
   const [resetVersion, setResetVersion] = useState(0)
   const touchStartRef = useRef<{ x: number; y: number } | null>(null)
+  const prevViewRef = useRef<'counter' | 'multi'>('counter')
 
   useEffect(() => {
     if (!wakeLockEnabled || !('wakeLock' in navigator)) return
@@ -201,7 +202,7 @@ export default function App() {
           initialHue={counterHue(activeCounter)}
           prevHue={prevHue}
           nextHue={nextHue}
-          onShowList={() => startVT('to-list', () => setView('list'))}
+          onShowList={() => { prevViewRef.current = 'counter'; startVT('to-list', () => setView('list')) }}
           onCounterUpdate={onCounterUpdate}
         />
       ) : view === 'multi' ? (
@@ -209,7 +210,7 @@ export default function App() {
           counters={counters}
           multiViewIds={multiViewIds}
           onMultiViewIdsChange={handleMultiViewIdsChange}
-          onShowList={() => startVT('to-list', () => setView('list'))}
+          onShowList={() => { prevViewRef.current = 'multi'; startVT('to-list', () => setView('list')) }}
           onCounterUpdate={onCounterUpdate}
         />
       ) : (
@@ -219,7 +220,7 @@ export default function App() {
           onSelect={selectCounter}
           onAdd={addCounter}
           onDelete={removeCounter}
-          onClose={() => startVT('to-counter', () => setView('counter'))}
+          onClose={() => startVT('to-counter', () => setView(prevViewRef.current))}
           onShowMulti={() => startVT('to-counter', () => setView('multi'))}
           onReorder={onReorder}
           onRename={onRename}
