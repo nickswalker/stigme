@@ -34,6 +34,7 @@ interface Props {
   wakeLockEnabled: boolean
   onToggleWakeLock: () => void
   onResetAll: () => void
+  onShowHelp: () => void
 }
 
 interface RowProps {
@@ -138,7 +139,7 @@ function SortableRow({ counter, hue, activeId, editing, showDelete, onSelect, on
   )
 }
 
-export function CounterList({ counters, activeId, onSelect, onAdd, onDelete, onClose, onShowMulti, onReorder, onRename, onRecolor, wakeLockEnabled, onToggleWakeLock, onResetAll }: Props) {
+export function CounterList({ counters, activeId, onSelect, onAdd, onDelete, onClose, onShowMulti, onReorder, onRename, onRecolor, wakeLockEnabled, onToggleWakeLock, onResetAll, onShowHelp }: Props) {
   const [editing, setEditing] = useState(false)
   const [showResetModal, setShowResetModal] = useState(false)
   const [webSpeech, setWebSpeech] = useState(getPreferWebSpeech)
@@ -326,6 +327,22 @@ export function CounterList({ counters, activeId, onSelect, onAdd, onDelete, onC
           <button className="settings-action-row settings-action-row--danger" onClick={() => setShowResetModal(true)}>
             Reset all data
           </button>
+
+          <div className="list-settings-label" style={{ marginTop: 24 }}>About</div>
+          <button className="settings-action-row" onClick={onShowHelp}>
+            <span>How to use</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="chevron">
+              <polyline points="9 18 15 12 9 6" />
+            </svg>
+          </button>
+          <a className="settings-action-row" href="https://github.com/nickswalker/stigme" target="_blank" rel="noopener noreferrer">
+            <span>Code</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="18" height="18">
+              <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6" />
+              <polyline points="15 3 21 3 21 9" />
+              <line x1="10" y1="14" x2="21" y2="3" />
+            </svg>
+          </a>
         </div>
       </div>
 
