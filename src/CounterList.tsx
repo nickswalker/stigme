@@ -36,6 +36,7 @@ interface Props {
   onResetAll: () => void
   onShowHelp: () => void
   fromMulti: boolean
+  multiViewIds: string[]
 }
 
 interface RowProps {
@@ -140,7 +141,7 @@ function SortableRow({ counter, hue, activeId, editing, showDelete, onSelect, on
   )
 }
 
-export function CounterList({ counters, activeId, onSelect, onAdd, onDelete, onClose, onShowMulti, onReorder, onRename, onRecolor, wakeLockEnabled, onToggleWakeLock, onResetAll, onShowHelp, fromMulti }: Props) {
+export function CounterList({ counters, activeId, onSelect, onAdd, onDelete, onClose, onShowMulti, onReorder, onRename, onRecolor, wakeLockEnabled, onToggleWakeLock, onResetAll, onShowHelp, fromMulti, multiViewIds }: Props) {
   const [editing, setEditing] = useState(false)
   const [showResetModal, setShowResetModal] = useState(false)
   const [webSpeech, setWebSpeech] = useState(getPreferWebSpeech)
@@ -260,12 +261,29 @@ export function CounterList({ counters, activeId, onSelect, onAdd, onDelete, onC
               <div className="list-item">
                 <button className={`multi-counter-row${fromMulti ? ' active' : ''}`} onClick={onShowMulti}>
                   <span className="multi-counter-row-icon">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" width="20" height="20">
-                      <rect x="3" y="3" width="8" height="8" rx="1.5" />
-                      <rect x="13" y="3" width="8" height="8" rx="1.5" />
-                      <rect x="3" y="13" width="8" height="8" rx="1.5" />
-                      <rect x="13" y="13" width="8" height="8" rx="1.5" />
-                    </svg>
+                    {(() => {
+                      const slots = [0, 1, 2, 3].map(i => {
+                        const c = counters.find(c => c.id === multiViewIds[i])
+                        return c ? `hsl(${counterHue(c)}, 70%, 58%)` : 'currentColor'
+                      })
+                      const positions = [
+                        { x: 3, y: 3 }, { x: 13, y: 3 },
+                        { x: 3, y: 13 }, { x: 13, y: 13 },
+                      ]
+                      return (
+                        <svg viewBox="0 0 24 24" width="20" height="20">
+                          {positions.map((pos, i) => (
+                            <rect
+                              key={i}
+                              x={pos.x} y={pos.y}
+                              width="8" height="8" rx="1.5"
+                              fill={slots[i]}
+                              opacity={slots[i] === 'currentColor' ? 0.25 : 1}
+                            />
+                          ))}
+                        </svg>
+                      )
+                    })()}
                   </span>
                   <span className="multi-counter-row-label">Multi Counter</span>
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="16" height="16" className="multi-counter-row-chevron">
