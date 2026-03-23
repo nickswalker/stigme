@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
 import { useCounter } from './useCounter'
-import { getTapsForCounter, getNotes, addNote, removeTap, deleteNote, type Counter, type TapRecord, type NoteRecord } from './db'
+import { getTapsForCounter, getNotes, addNote, removeTap, deleteNote, type Counter } from './db'
 import { HistoryModal, type HistoryEntry } from './HistoryModal'
 import { NoteModal } from './NoteModal'
 import { playTap } from './tapSound'

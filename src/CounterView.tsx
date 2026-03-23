@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
 import { useCounter } from './useCounter'
-import { getTapsForCounter, getNotes, addNote, deleteNote, type TapRecord, type NoteRecord } from './db'
+import { getTapsForCounter, getNotes, addNote, deleteNote, type TapRecord } from './db'
 import type { Counter } from './db'
 import { NoteModal } from './NoteModal'
 import { HistoryModal, type HistoryEntry } from './HistoryModal'
