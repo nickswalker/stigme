@@ -3,6 +3,7 @@ import { flushSync } from 'react-dom'
 import { CounterView } from './CounterView'
 import { CounterList } from './CounterList'
 import { MultiCounterView } from './MultiCounterView'
+import { HelpView } from './HelpView'
 import { getCounters, saveCounter, saveCounters, deleteCounter, type Counter } from './db'
 import { BUTTON_HUES, counterHue } from './colors'
 import { getPreferWakeLock, WAKE_LOCK_KEY } from './SettingsView'
@@ -28,7 +29,7 @@ function loadMultiViewIds(): string[] {
 export default function App() {
   const [counters, setCounters] = useState<Counter[]>([])
   const [activeId, setActiveId] = useState<string | null>(null)
-  const [view, setView] = useState<'counter' | 'list' | 'multi'>('counter')
+  const [view, setView] = useState<'counter' | 'list' | 'multi' | 'help'>('counter')
   const [multiViewIds, setMultiViewIds] = useState<string[]>(loadMultiViewIds)
   const [wakeLockEnabled, setWakeLockEnabled] = useState(getPreferWakeLock)
   const [resetVersion, setResetVersion] = useState(0)
@@ -213,6 +214,8 @@ export default function App() {
           onShowList={() => { prevViewRef.current = 'multi'; startVT('to-list', () => setView('list')) }}
           onCounterUpdate={onCounterUpdate}
         />
+      ) : view === 'help' ? (
+        <HelpView onClose={() => startVT('to-list', () => setView('list'))} />
       ) : (
         <CounterList
           counters={counters}
@@ -228,6 +231,7 @@ export default function App() {
           wakeLockEnabled={wakeLockEnabled}
           onToggleWakeLock={toggleWakeLock}
           onResetAll={() => setResetVersion(v => v + 1)}
+          onShowHelp={() => startVT('to-counter', () => setView('help'))}
         />
       )}
     </div>
