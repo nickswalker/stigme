@@ -25,7 +25,7 @@ export function HelpView({ onClose }: Props) {
         </section>
 
         <section className="help-section">
-          <h2>Multiple counters</h2>
+          <h2>Counter list</h2>
           <p>Open the counter list with the menu icon in the top left. From there you can add, rename, reorder, recolor, or delete counters.</p>
           <p>Swipe left or right on the counter screen to switch between counters.</p>
         </section>
