@@ -4,7 +4,7 @@ import { CounterView } from './CounterView'
 import { CounterList } from './CounterList'
 import { MultiCounterView } from './MultiCounterView'
 import { HelpView } from './HelpView'
-import { getCounters, saveCounter, saveCounters, deleteCounter, type Counter } from './db'
+import { getCounters, saveCounter, saveCounters, deleteCounter, clearAllData, type Counter } from './db'
 import { BUTTON_HUES, counterHue } from './colors'
 import { getPreferWakeLock, WAKE_LOCK_KEY } from './SettingsView'
 import './App.css'
@@ -32,7 +32,7 @@ export default function App() {
   const [view, setView] = useState<'counter' | 'list' | 'multi' | 'help'>('counter')
   const [multiViewIds, setMultiViewIds] = useState<string[]>(loadMultiViewIds)
   const [wakeLockEnabled, setWakeLockEnabled] = useState(getPreferWakeLock)
-  const [resetVersion, setResetVersion] = useState(0)
+
   const touchStartRef = useRef<{ x: number; y: number } | null>(null)
   const prevViewRef = useRef<'counter' | 'multi'>('counter')
 
@@ -181,6 +181,23 @@ export default function App() {
     localStorage.setItem('multiViewIds', JSON.stringify(ids))
   }, [])
 
+  const handleResetAll = useCallback(async () => {
+    await clearAllData()
+    localStorage.removeItem('multiViewIds')
+    const defaultCounter: Counter = {
+      id: crypto.randomUUID(),
+      name: 'Counter',
+      createdAt: Date.now(),
+      step: 1,
+      colorIndex: 0,
+    }
+    await saveCounter(defaultCounter)
+    setCounters([defaultCounter])
+    setActiveId(defaultCounter.id)
+    setMultiViewIds([])
+    setView('counter')
+  }, [])
+
   if (!activeId) return null
 
   const activeIdx = counters.findIndex(c => c.id === activeId)
@@ -198,7 +215,7 @@ export default function App() {
     >
       {view === 'counter' ? (
         <CounterView
-          key={activeId + '-' + resetVersion}
+          key={activeId}
           counterId={activeId}
           initialHue={counterHue(activeCounter)}
           prevHue={prevHue}
@@ -230,7 +247,7 @@ export default function App() {
           onRecolor={onRecolor}
           wakeLockEnabled={wakeLockEnabled}
           onToggleWakeLock={toggleWakeLock}
-          onResetAll={() => setResetVersion(v => v + 1)}
+          onResetAll={handleResetAll}
           onShowHelp={() => startVT('to-counter', () => setView('help'))}
           fromMulti={prevViewRef.current === 'multi'}
         />

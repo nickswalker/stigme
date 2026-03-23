@@ -152,5 +152,6 @@ export async function clearAllData(): Promise<void> {
   await Promise.all([
     db.clear('taps'),
     db.clear('notes'),
+    db.clear('counters'),
   ])
 }
