@@ -22,6 +22,11 @@ import { downloadAsTSV } from './utils'
 import { IconClose, IconPlus, IconEdit, IconTrash, IconDragHandle, IconDownload, IconChevronRight, IconExternalLink, IconMultiGrid } from './Icons'
 import './CounterList.css'
 
+const PWA_PROMPT_KEY = 'pwa-prompt-dismissed'
+function isStandalone() {
+  return window.matchMedia('(display-mode: standalone)').matches || (navigator as any).standalone === true
+}
+
 interface Props {
   counters: Counter[]
   activeId: string
@@ -140,6 +145,9 @@ export function CounterList({ counters, activeId, onSelect, onAdd, onDelete, onC
   const [showResetModal, setShowResetModal] = useState(false)
   const [webSpeech, setWebSpeech] = useState(getPreferWebSpeech)
   const [soundEnabled, setSoundEnabled] = useState(getPreferSound)
+  const [showInstallPrompt, setShowInstallPrompt] = useState(
+    () => !isStandalone() && !localStorage.getItem(PWA_PROMPT_KEY)
+  )
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -255,6 +263,24 @@ export function CounterList({ counters, activeId, onSelect, onAdd, onDelete, onC
             </div>
           </SortableContext>
         </DndContext>
+
+        {showInstallPrompt && (
+          <div className="install-prompt">
+            <div className="install-prompt-text">
+              <strong>Add to Home Screen</strong>
+              <span>Install for full-screen use and faster launch.</span>
+            </div>
+            <div className="install-prompt-actions">
+              <button className="install-prompt-how" onClick={onShowHelp}>How?</button>
+              <button className="install-prompt-dismiss" onClick={() => {
+                localStorage.setItem(PWA_PROMPT_KEY, '1')
+                setShowInstallPrompt(false)
+              }} aria-label="Dismiss">
+                <IconClose width="14" height="14" />
+              </button>
+            </div>
+          </div>
+        )}
 
         <div className="list-settings">
           <div className="list-settings-label">Display</div>
