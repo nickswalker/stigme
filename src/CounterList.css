@@ -55,7 +55,8 @@
 }
 
 .multi-counter-row.active {
-  color: var(--accent);
+  color: var(--text);
+  font-weight: 700;
 }
 
 .multi-counter-row-icon {

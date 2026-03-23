@@ -149,7 +149,7 @@ export function IconMultiGrid({ slots, ...p }: MultiGridProps) {
         key={i}
         x={pos.x} y={pos.y}
         width="8" height="8" rx="1.5"
-        fill={slots[i] ?? 'currentColor'}
+        fill={slots[i] || 'currentColor'}
         opacity={slots[i] ? 1 : 0.25}
       />
     ))}
