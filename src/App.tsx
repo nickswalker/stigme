@@ -232,6 +232,7 @@ export default function App() {
           onToggleWakeLock={toggleWakeLock}
           onResetAll={() => setResetVersion(v => v + 1)}
           onShowHelp={() => startVT('to-counter', () => setView('help'))}
+          fromMulti={prevViewRef.current === 'multi'}
         />
       )}
     </div>

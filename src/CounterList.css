@@ -59,6 +59,10 @@
   background: var(--bg3);
 }
 
+.multi-counter-row.active {
+  color: var(--accent);
+}
+
 .multi-counter-row-icon {
   color: var(--accent);
   display: flex;
