@@ -170,6 +170,7 @@
   font-size: clamp(11px, 3vw, 15px);
   font-weight: 600;
   color: rgba(255, 255, 255, 0.9);
+  color: contrast-color(hsl(var(--btn-hue) 75% 58%));
   pointer-events: none;
   text-align: center;
   overflow: hidden;
@@ -190,7 +191,8 @@
   transform: translateX(-50%);
   font-size: 13px;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.55);
+  color: rgba(255, 255, 255, 0.7);
+  color: contrast-color(hsl(var(--btn-hue) 75% 58%));
   pointer-events: none;
   animation: streak-in 0.15s ease-out;
 }
