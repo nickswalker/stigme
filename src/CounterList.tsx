@@ -282,20 +282,7 @@ export function CounterList({ counters, activeId, onSelect, onAdd, onDelete, onC
         </div>
 
         <div className="list-settings">
-          <div className="list-settings-label">Data</div>
-          <button className="settings-action-row" onClick={downloadAllHistory}>
-            <span>Download all history (.tsv)</span>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="18" height="18">
-              <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
-              <polyline points="7 10 12 15 17 10" />
-              <line x1="12" y1="15" x2="12" y2="3" />
-            </svg>
-          </button>
-          <button className="settings-action-row settings-action-row--danger" onClick={() => setShowResetModal(true)}>
-            Reset all data
-          </button>
-
-          <div className="list-settings-label" style={{ marginTop: 24 }}>Display</div>
+          <div className="list-settings-label">Display</div>
           <button className="settings-toggle-row" onClick={toggleSound}>
             <div className="settings-toggle-text">
               <span className="settings-toggle-title">Tap sounds</span>
@@ -330,6 +317,19 @@ export function CounterList({ counters, activeId, onSelect, onAdd, onDelete, onC
             <div className={`toggle-switch ${webSpeech ? 'on' : ''}`} aria-hidden="true">
               <div className="toggle-thumb" />
             </div>
+          </button>
+
+          <div className="list-settings-label" style={{ marginTop: 24 }}>Data</div>
+          <button className="settings-action-row" onClick={downloadAllHistory}>
+            <span>Download all history (.tsv)</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="18" height="18">
+              <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
+              <polyline points="7 10 12 15 17 10" />
+              <line x1="12" y1="15" x2="12" y2="3" />
+            </svg>
+          </button>
+          <button className="settings-action-row settings-action-row--danger" onClick={() => setShowResetModal(true)}>
+            Reset all data
           </button>
         </div>
       </div>
