@@ -3,6 +3,7 @@ import { useCounter } from './useCounter'
 import { getTapsForCounter, getNotes, addNote, deleteNote, type TapRecord, type NoteRecord } from './db'
 import type { Counter } from './db'
 import { NoteModal } from './NoteModal'
+import { HistoryModal, type HistoryEntry } from './HistoryModal'
 import { playTap } from './tapSound'
 import './CounterView.css'
 
@@ -17,9 +18,6 @@ interface Props {
   onCounterUpdate: (counter: Counter) => void
 }
 
-type HistoryEntry =
-  | { kind: 'tap'; rec: TapRecord }
-  | { kind: 'note'; rec: NoteRecord }
 
 export function CounterView({ counterId, initialHue, prevHue, nextHue, onShowList, onCounterUpdate }: Props) {
   const { count, counter, loading, increment, decrement, undo, canUndo, deleteTap, reset, rename, setStep } = useCounter(counterId)
@@ -33,8 +31,6 @@ export function CounterView({ counterId, initialHue, prevHue, nextHue, onShowLis
   const [confirmReset, setConfirmReset] = useState(false)
   const [, forceUpdate] = useState(0)
   const [flashKey, setFlashKey] = useState(0)
-  const [swipedKey, setSwipedKey] = useState<string | null>(null)
-  const rowTouchRef = useRef<{ startX: number; startY: number; key: string } | null>(null)
   const tapButtonRef = useRef<HTMLButtonElement>(null)
   const [streak, setStreak] = useState(0)
   const streakTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -177,27 +173,7 @@ const handleSaveNote = useCallback(async (text: string) => {
     } else if (entry.kind === 'note' && entry.rec.id != null) {
       await deleteNote(entry.rec.id)
     }
-    setHistory(prev => prev.filter(e => e !== entry))
-    setSwipedKey(null)
   }, [deleteTap, refreshLastTapAt])
-
-  function onRowTouchStart(e: React.TouchEvent, key: string) {
-    const t = e.touches[0]
-    rowTouchRef.current = { startX: t.clientX, startY: t.clientY, key }
-  }
-
-  function onRowTouchMove(e: React.TouchEvent) {
-    if (!rowTouchRef.current) return
-    const t = e.touches[0]
-    const dx = t.clientX - rowTouchRef.current.startX
-    const dy = t.clientY - rowTouchRef.current.startY
-    if (Math.abs(dy) > Math.abs(dx) + 5) { rowTouchRef.current = null; return }
-    const { key } = rowTouchRef.current
-    if (dx < -40) setSwipedKey(key)
-    else if (dx > 10 && swipedKey === key) setSwipedKey(null)
-  }
-
-  function onRowTouchEnd() { rowTouchRef.current = null }
 
   const downloadHistory = useCallback(async () => {
     const [taps, notes] = await Promise.all([
@@ -390,73 +366,11 @@ const handleSaveNote = useCallback(async (text: string) => {
 
       {/* History modal */}
       {showHistory && (
-        <div className="modal-overlay" onClick={() => setShowHistory(false)}>
-          <div className="modal" onClick={e => e.stopPropagation()}>
-            <div className="modal-header">
-              <h2>History</h2>
-              <button className="icon-btn" onClick={() => setShowHistory(false)}>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <line x1="18" y1="6" x2="6" y2="18" />
-                  <line x1="6" y1="6" x2="18" y2="18" />
-                </svg>
-              </button>
-            </div>
-            <div className="history-list" onClick={() => setSwipedKey(null)}>
-              {history.length === 0 ? (
-                <p className="empty-msg">No history yet</p>
-              ) : (
-                groupByDay(history).map((group, gi) =>
-                  <div key={group.label} className="history-day-group">
-                    <div className="history-day-header">{group.label}</div>
-                    {group.entries.map((entry, i) => {
-                      const globalIndex = gi * 1000 + i
-                      const key = entry.kind === 'tap' ? `tap-${entry.rec.id}` : `note-${entry.rec.id ?? globalIndex}`
-                      const swiped = swipedKey === key
-                      return (
-                        <div
-                          key={key}
-                          className="history-item-wrap"
-                          onTouchStart={e => onRowTouchStart(e, key)}
-                          onTouchMove={onRowTouchMove}
-                          onTouchEnd={onRowTouchEnd}
-                        >
-                          {entry.kind === 'tap' ? (
-                            <div className={`history-item${swiped ? ' swiped' : ''}`}>
-                              <span className={`history-value ${entry.rec.value >= 0 ? 'positive' : 'negative'}`}>
-                                {entry.rec.value >= 0 ? '+' : ''}{entry.rec.value}
-                              </span>
-                              <span className="history-time">{formatTimeOnly(entry.rec.timestamp, group.showSeconds)}</span>
-                            </div>
-                          ) : (
-                            <div className={`history-item history-item--note${swiped ? ' swiped' : ''}`}>
-                              <span className="history-note-icon">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="14" height="14">
-                                  <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
-                                  <polyline points="14 2 14 8 20 8" />
-                                  <line x1="16" y1="13" x2="8" y2="13" />
-                                  <line x1="16" y1="17" x2="8" y2="17" />
-                                </svg>
-                              </span>
-                              <span className="history-note-text">{entry.rec.text}</span>
-                              <span className="history-time">{formatTimeOnly(entry.rec.timestamp, group.showSeconds)}</span>
-                            </div>
-                          )}
-                          <button
-                            className="history-delete-btn"
-                            onClick={e => { e.stopPropagation(); handleDeleteEntry(entry) }}
-                            aria-label="Delete entry"
-                          >
-                            Delete
-                          </button>
-                        </div>
-                      )
-                    })}
-                  </div>
-                )
-              )}
-            </div>
-          </div>
-        </div>
+        <HistoryModal
+          entries={history}
+          onDelete={handleDeleteEntry}
+          onClose={() => setShowHistory(false)}
+        />
       )}
     </div>
   )
@@ -482,50 +396,3 @@ function formatElapsed(ms: number): string {
   return `${dd}:${String(hh % 24).padStart(2, '0')}:${String(mm % 60).padStart(2, '0')}:${String(ss % 60).padStart(2, '0')}`
 }
 
-type DayGroup = {
-  label: string
-  entries: HistoryEntry[]
-  showSeconds: boolean
-}
-
-function groupByDay(entries: HistoryEntry[]): DayGroup[] {
-  const groups: DayGroup[] = []
-  let currentKey = ''
-  let currentGroup: DayGroup | null = null
-
-  for (const entry of entries) {
-    const d = new Date(entry.rec.timestamp)
-    const dayKey = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`
-    if (dayKey !== currentKey) {
-      currentKey = dayKey
-      currentGroup = {
-        label: d.toLocaleDateString(undefined, { month: 'long', day: 'numeric' }),
-        entries: [],
-        showSeconds: false,
-      }
-      groups.push(currentGroup)
-    }
-    currentGroup!.entries.push(entry)
-  }
-
-  for (const group of groups) {
-    const timestamps = group.entries.map(e => e.rec.timestamp)
-    for (let i = 1; i < timestamps.length; i++) {
-      if (Math.abs(timestamps[i - 1] - timestamps[i]) < 60_000) {
-        group.showSeconds = true
-        break
-      }
-    }
-  }
-
-  return groups
-}
-
-function formatTimeOnly(ts: number, showSeconds: boolean): string {
-  const d = new Date(ts)
-  return d.toLocaleTimeString(undefined, {
-    hour: '2-digit',
-    minute: '2-digit',
-    ...(showSeconds ? { second: '2-digit' } : {}),
-  })
-}
