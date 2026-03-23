@@ -250,6 +250,7 @@ export default function App() {
           onResetAll={handleResetAll}
           onShowHelp={() => startVT('to-counter', () => setView('help'))}
           fromMulti={prevViewRef.current === 'multi'}
+          multiViewIds={multiViewIds}
         />
       )}
     </div>
