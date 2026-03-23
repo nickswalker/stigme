@@ -4,6 +4,7 @@
 }
 
 :root {
+  overscroll-behavior-y: none;
   --bg: #0f0f1a;
   --bg2: #1a1a2e;
   --bg3: #252540;
