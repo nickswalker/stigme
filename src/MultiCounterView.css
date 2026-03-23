@@ -196,7 +196,8 @@
   transform: translateX(-50%);
   font-size: 13px;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.55);
+  color: rgba(255, 255, 255, 0.7);
+  color: color-contrast(hsl(var(--btn-hue) 75% 58%) vs rgba(255, 255, 255, 0.7), rgba(0, 0, 0, 0.7));
   pointer-events: none;
   animation: streak-in 0.15s ease-out;
 }
