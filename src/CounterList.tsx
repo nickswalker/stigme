@@ -35,6 +35,7 @@ interface Props {
   onToggleWakeLock: () => void
   onResetAll: () => void
   onShowHelp: () => void
+  fromMulti: boolean
 }
 
 interface RowProps {
@@ -139,7 +140,7 @@ function SortableRow({ counter, hue, activeId, editing, showDelete, onSelect, on
   )
 }
 
-export function CounterList({ counters, activeId, onSelect, onAdd, onDelete, onClose, onShowMulti, onReorder, onRename, onRecolor, wakeLockEnabled, onToggleWakeLock, onResetAll, onShowHelp }: Props) {
+export function CounterList({ counters, activeId, onSelect, onAdd, onDelete, onClose, onShowMulti, onReorder, onRename, onRecolor, wakeLockEnabled, onToggleWakeLock, onResetAll, onShowHelp, fromMulti }: Props) {
   const [editing, setEditing] = useState(false)
   const [showResetModal, setShowResetModal] = useState(false)
   const [webSpeech, setWebSpeech] = useState(getPreferWebSpeech)
@@ -247,7 +248,7 @@ export function CounterList({ counters, activeId, onSelect, onAdd, onDelete, onC
                   key={c.id}
                   counter={c}
                   hue={counterHue(c)}
-                  activeId={activeId}
+                  activeId={fromMulti ? '' : activeId}
                   editing={editing}
                   showDelete={editing && counters.length > 1}
                   onSelect={onSelect}
@@ -261,7 +262,7 @@ export function CounterList({ counters, activeId, onSelect, onAdd, onDelete, onC
         </DndContext>
 
         <div className="list-body list-body--special">
-          <button className="multi-counter-row" onClick={onShowMulti}>
+          <button className={`multi-counter-row${fromMulti ? ' active' : ''}`} onClick={onShowMulti}>
             <span className="multi-counter-row-icon">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" width="20" height="20">
                 <rect x="3" y="3" width="8" height="8" rx="1.5" />
