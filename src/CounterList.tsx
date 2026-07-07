@@ -20,6 +20,7 @@ import { getPreferWebSpeech, PREF_KEY, getPreferSound, SOUND_KEY } from './Setti
 import { counterHue, hueToHex, hexToHue } from './colors'
 import { downloadAsTSV } from './utils'
 import { IconClose, IconPlus, IconEdit, IconTrash, IconDragHandle, IconDownload, IconChevronRight, IconExternalLink, IconMultiGrid } from './Icons'
+import { trackEvent } from './analytics'
 import './CounterList.css'
 
 const PWA_PROMPT_KEY = 'pwa-prompt-dismissed'
@@ -194,6 +195,7 @@ export function CounterList({ counters, activeId, onSelect, onAdd, onDelete, onC
         .sort((a, b) => a.ts - b.ts)
         .map(r => [...r.cols, new Date(r.ts).toISOString()].join('\t')),
     ], 'all_history.tsv')
+    trackEvent('download-all-history')
   }, [])
 
   async function handleResetAll() {

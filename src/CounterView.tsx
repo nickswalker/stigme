@@ -8,6 +8,7 @@ import { playTap } from './tapSound'
 import { useElapsedTimer } from './useElapsedTimer'
 import { formatElapsed, downloadAsTSV } from './utils'
 import { IconMenu, IconSettings, IconNote, IconDecrement, IconUndo, IconReset, IconChevronRight, IconDownload } from './Icons'
+import { trackEvent } from './analytics'
 import './CounterView.css'
 
 import { counterHue } from './colors'
@@ -144,6 +145,7 @@ const handleSaveNote = useCallback(async (text: string) => {
     ].sort((a, b) => b.rec.timestamp - a.rec.timestamp)
     setHistory(entries)
     setShowHistory(true)
+    trackEvent('history-open')
   }, [counterId, counter])
 
   const handleDeleteEntry = useCallback(async (entry: HistoryEntry) => {
@@ -165,6 +167,7 @@ const handleSaveNote = useCallback(async (text: string) => {
       ['Counter', 'Action', 'Value', 'Note', 'Timestamp'].join('\t'),
       ...[...tapRows, ...noteRows].sort((a, b) => a.ts - b.ts).map(r => [...r.cols, new Date(r.ts).toISOString()].join('\t')),
     ], `${name.replace(/[^a-z0-9]/gi, '_')}_history.tsv`)
+    trackEvent('download-history')
   }, [counterId, counter])
 
   if (loading) return <div className="counter-loading" />
@@ -312,4 +315,3 @@ const handleSaveNote = useCallback(async (text: string) => {
     </div>
   )
 }
-

@@ -8,6 +8,7 @@ import { counterHue } from './colors'
 import { useElapsedTimer } from './useElapsedTimer'
 import { formatElapsed, downloadAsTSV } from './utils'
 import { IconMenu, IconSettings, IconEdit, IconClose, IconChevronRight, IconDownload, IconDecrement, IconUndo, IconNote, IconPlus } from './Icons'
+import { trackEvent } from './analytics'
 import './MultiCounterView.css'
 import './CounterView.css'
 
@@ -175,6 +176,7 @@ export function MultiCounterView({ counters, multiViewIds, onMultiViewIdsChange,
     ].sort((a, b) => b.rec.timestamp - a.rec.timestamp)
     setHistory(entries)
     setShowHistory(true)
+    trackEvent('multi-history-open')
   }, [cells, counters])
 
   const handleDeleteEntry = useCallback(async (entry: HistoryEntry) => {
@@ -205,6 +207,7 @@ export function MultiCounterView({ counters, multiViewIds, onMultiViewIdsChange,
         .sort((a, b) => a.ts - b.ts)
         .map(r => [...r.cols, new Date(r.ts).toISOString()].join('\t')),
     ], 'multi_counter_history.tsv')
+    trackEvent('download-multi-history')
   }, [cells, counters])
 
 

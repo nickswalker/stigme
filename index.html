@@ -11,6 +11,17 @@
     <meta name="apple-mobile-web-app-title" content="Stigme" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <title>Stigme</title>
+    <script>
+      window.goatcounter = {
+        path: function (p) {
+          return "stigme." + p;
+        },
+      }
+      if (window.location.hostname !== "stigme.nickwalker.us") {
+        window.goatcounter = undefined
+      }
+    </script>
+    <script async data-goatcounter="https://nickwalker.us/stats/count" src="https://nickwalker.us/stats/count.js"></script>
   </head>
   <body>
     <div id="root"></div>
