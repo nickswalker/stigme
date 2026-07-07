@@ -30,7 +30,7 @@ jobs:
 
       - run: npm run build
         env:
-          VITE_BASE_URL: /${{ github.event.repository.name }}/
+          VITE_BASE_URL: /
 
       - uses: actions/upload-pages-artifact@v4
         with:
