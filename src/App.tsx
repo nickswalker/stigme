@@ -6,18 +6,20 @@ import { MultiCounterView } from './MultiCounterView'
 import { HelpView } from './HelpView'
 import { getCounters, saveCounter, saveCounters, deleteCounter, clearAllData, type Counter } from './db'
 import { BUTTON_HUES, counterHue } from './colors'
-import { getPreferWakeLock, WAKE_LOCK_KEY } from './SettingsView'
+import { getPreferWakeLock, setPreferWakeLock } from './preferences'
 import './App.css'
 
 function startVT(dir: string, fn: () => void) {
   const { documentElement } = document
   documentElement.dataset.vt = dir
-  if ('startViewTransition' in document) {
-    ;(document as any).startViewTransition(() => { flushSync(fn) })
-      .finished.then(() => { delete documentElement.dataset.vt })
+  const cleanup = () => { delete documentElement.dataset.vt }
+  if (document.startViewTransition) {
+    // `.finished` rejects when a transition is skipped; `.finally` still cleans
+    // up, and the trailing `.catch` swallows the (expected) rejection.
+    document.startViewTransition(() => { flushSync(fn) }).finished.finally(cleanup).catch(() => {})
   } else {
     fn()
-    delete documentElement.dataset.vt
+    cleanup()
   }
 }
 
@@ -34,18 +36,24 @@ export default function App() {
   const [wakeLockEnabled, setWakeLockEnabled] = useState(getPreferWakeLock)
 
   const touchStartRef = useRef<{ x: number; y: number } | null>(null)
-  const prevViewRef = useRef<'counter' | 'multi'>('counter')
+  const [prevView, setPrevView] = useState<'counter' | 'multi'>('counter')
 
   useEffect(() => {
     if (!wakeLockEnabled || !('wakeLock' in navigator)) return
     let sentinel: WakeLockSentinel | null = null
+    let cancelled = false
     async function acquire() {
-      try { sentinel = await (navigator as any).wakeLock.request('screen') } catch { /* denied or unavailable */ }
+      try {
+        sentinel = await navigator.wakeLock.request('screen')
+        // Cleanup may have run while the request was in flight — release now.
+        if (cancelled) { sentinel.release(); sentinel = null }
+      } catch { /* denied or unavailable */ }
     }
     acquire()
     function onVisibility() { if (document.visibilityState === 'visible') acquire() }
     document.addEventListener('visibilitychange', onVisibility)
     return () => {
+      cancelled = true
       document.removeEventListener('visibilitychange', onVisibility)
       sentinel?.release()
     }
@@ -58,7 +66,7 @@ export default function App() {
   const toggleWakeLock = useCallback(() => {
     setWakeLockEnabled(prev => {
       const next = !prev
-      localStorage.setItem(WAKE_LOCK_KEY, String(next))
+      setPreferWakeLock(next)
       return next
     })
   }, [])
@@ -102,23 +110,17 @@ export default function App() {
       setActiveId(counter.id)
       setView('counter')
     })
-  }, [counters.length])
+  }, [counters])
 
   const removeCounter = useCallback(async (id: string) => {
     await deleteCounter(id)
-    setCounters(prev => {
-      const next = prev.filter(c => c.id !== id)
-      if (activeId === id) {
-        setActiveId(next[0]?.id ?? null)
-      }
-      return next
-    })
-    setMultiViewIds(prev => {
-      const next = prev.filter(x => x !== id)
-      localStorage.setItem('multiViewIds', JSON.stringify(next))
-      return next
-    })
-  }, [activeId])
+    const nextCounters = counters.filter(c => c.id !== id)
+    setCounters(nextCounters)
+    if (activeId === id) setActiveId(nextCounters[0]?.id ?? null)
+    const nextMultiViewIds = multiViewIds.filter(x => x !== id)
+    setMultiViewIds(nextMultiViewIds)
+    localStorage.setItem('multiViewIds', JSON.stringify(nextMultiViewIds))
+  }, [activeId, counters, multiViewIds])
 
   const selectCounter = useCallback((id: string) => {
     startVT('to-counter', () => {
@@ -220,7 +222,7 @@ export default function App() {
           initialHue={counterHue(activeCounter)}
           prevHue={prevHue}
           nextHue={nextHue}
-          onShowList={() => { prevViewRef.current = 'counter'; startVT('to-list', () => setView('list')) }}
+          onShowList={() => { setPrevView('counter'); startVT('to-list', () => setView('list')) }}
           onCounterUpdate={onCounterUpdate}
         />
       ) : view === 'multi' ? (
@@ -228,8 +230,7 @@ export default function App() {
           counters={counters}
           multiViewIds={multiViewIds}
           onMultiViewIdsChange={handleMultiViewIdsChange}
-          onShowList={() => { prevViewRef.current = 'multi'; startVT('to-list', () => setView('list')) }}
-          onCounterUpdate={onCounterUpdate}
+          onShowList={() => { setPrevView('multi'); startVT('to-list', () => setView('list')) }}
         />
       ) : view === 'help' ? (
         <HelpView onClose={() => startVT('to-list', () => setView('list'))} />
@@ -240,7 +241,7 @@ export default function App() {
           onSelect={selectCounter}
           onAdd={addCounter}
           onDelete={removeCounter}
-          onClose={() => startVT('to-counter', () => setView(prevViewRef.current))}
+          onClose={() => startVT('to-counter', () => setView(prevView))}
           onShowMulti={() => startVT('to-counter', () => setView('multi'))}
           onReorder={onReorder}
           onRename={onRename}
@@ -249,7 +250,7 @@ export default function App() {
           onToggleWakeLock={toggleWakeLock}
           onResetAll={handleResetAll}
           onShowHelp={() => startVT('to-counter', () => setView('help'))}
-          fromMulti={prevViewRef.current === 'multi'}
+          fromMulti={prevView === 'multi'}
           multiViewIds={multiViewIds}
         />
       )}
