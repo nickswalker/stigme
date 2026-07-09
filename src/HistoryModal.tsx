@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react'
 import type { TapRecord, NoteRecord } from './db'
+import { useEscapeKey } from './useEscapeKey'
 import { IconClose, IconNoteDoc } from './Icons'
 
 export type HistoryEntry =
@@ -51,6 +52,8 @@ export function HistoryModal({ entries: initialEntries, onDelete, onClose }: Pro
   const [entries, setEntries] = useState(initialEntries)
   const [swipedKey, setSwipedKey] = useState<string | null>(null)
   const rowTouchRef = useRef<{ startX: number; startY: number; key: string } | null>(null)
+
+  useEscapeKey(onClose)
 
   async function handleDelete(entry: HistoryEntry) {
     await onDelete(entry)
@@ -144,6 +147,15 @@ export function HistoryModal({ entries: initialEntries, onDelete, onClose }: Pro
                         aria-label="Delete entry"
                       >
                         Delete
+                      </button>
+                      {/* Mouse affordance: compact delete shown on row hover
+                          (touch uses swipe-to-reveal instead) */}
+                      <button
+                        className="history-delete-x"
+                        onClick={e => { e.stopPropagation(); handleDelete(entry) }}
+                        aria-label="Delete entry"
+                      >
+                        <IconClose width="14" height="14" />
                       </button>
                     </div>
                   )

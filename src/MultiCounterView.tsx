@@ -5,6 +5,7 @@ import { HistoryModal, type HistoryEntry } from './HistoryModal'
 import { NoteModal } from './NoteModal'
 import { counterHue } from './colors'
 import { useTapFeedback } from './useTapFeedback'
+import { useEscapeKey } from './useEscapeKey'
 import { formatElapsed, exportHistoryTSV } from './utils'
 import { IconMenu, IconSettings, IconEdit, IconClose, IconChevronRight, IconDownload, IconDecrement, IconUndo, IconNote, IconPlus } from './Icons'
 import { trackEvent } from './analytics'
@@ -116,6 +117,15 @@ export function MultiCounterView({ counters, multiViewIds, onMultiViewIdsChange,
   const handleFlash = useCallback((hue: number) => {
     setFlashState(s => ({ key: s.key + 1, hue }))
   }, [])
+
+  // Escape closes the topmost open surface here; the history and note modals
+  // handle Escape themselves (so stay inactive while a history modal is open).
+  useEscapeKey(
+    showHistory ? null
+      : showPicker ? () => setShowPicker(false)
+      : showSettings ? () => setShowSettings(false)
+      : null
+  )
 
   const handleAdd = useCallback((id: string) => {
     if (multiViewIds.length >= 4) return

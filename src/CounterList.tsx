@@ -18,6 +18,7 @@ import { CSS } from '@dnd-kit/utilities'
 import { getCounters, getAllTaps, getNotes, type Counter } from './db'
 import { getPreferWebSpeech, setPreferWebSpeech, getPreferSound, setPreferSound } from './preferences'
 import { counterHue, hueToHex, hexToHue } from './colors'
+import { useEscapeKey } from './useEscapeKey'
 import { exportHistoryTSV } from './utils'
 import { IconClose, IconPlus, IconEdit, IconTrash, IconDragHandle, IconDownload, IconChevronRight, IconExternalLink, IconMultiGrid } from './Icons'
 import { trackEvent } from './analytics'
@@ -153,6 +154,8 @@ export function CounterList({ counters, activeId, onSelect, onAdd, onDelete, onC
   const [showInstallPrompt, setShowInstallPrompt] = useState(
     () => !isStandalone() && isMobileish() && !localStorage.getItem(PWA_PROMPT_KEY)
   )
+
+  useEscapeKey(showResetModal ? () => setShowResetModal(false) : null)
 
   const sensors = useSensors(
     useSensor(PointerSensor),

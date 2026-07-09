@@ -498,6 +498,47 @@
   -webkit-tap-highlight-color: transparent;
 }
 
+/* Compact delete for mouse users — swipe-to-reveal is touch-only */
+.history-delete-x {
+  display: none;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .history-item {
+    padding-right: 48px;
+  }
+
+  .history-delete-x {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 26px;
+    height: 26px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    border-radius: 50%;
+    background: none;
+    color: var(--text-dim);
+    cursor: pointer;
+    opacity: 0;
+    z-index: 2;
+    transition: opacity 0.15s, color 0.15s, background 0.15s;
+  }
+
+  .history-item-wrap:hover .history-delete-x,
+  .history-delete-x:focus-visible {
+    opacity: 1;
+  }
+
+  .history-delete-x:hover {
+    color: var(--danger);
+    background: var(--bg3);
+  }
+}
+
 .history-value {
   font-size: 14px;
   font-weight: 600;
