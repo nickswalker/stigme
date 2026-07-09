@@ -137,6 +137,18 @@ export default function App() {
     touchStartRef.current = { x: t.clientX, y: t.clientY }
   }, [view, counters.length])
 
+  const goPrev = useCallback(() => {
+    const idx = counters.findIndex(c => c.id === activeId)
+    if (idx > 0) startVT('swipe-right', () => setActiveId(counters[idx - 1].id))
+  }, [activeId, counters])
+
+  const goNext = useCallback(() => {
+    const idx = counters.findIndex(c => c.id === activeId)
+    if (idx >= 0 && idx < counters.length - 1) {
+      startVT('swipe-left', () => setActiveId(counters[idx + 1].id))
+    }
+  }, [activeId, counters])
+
   const handleTouchEnd = useCallback((e: React.TouchEvent) => {
     if (!touchStartRef.current || !activeId) return
     const start = touchStartRef.current
@@ -145,13 +157,25 @@ export default function App() {
     const dx = t.clientX - start.x
     const dy = t.clientY - start.y
     if (Math.abs(dx) < 60 || Math.abs(dx) <= Math.abs(dy)) return
-    const activeIdx = counters.findIndex(c => c.id === activeId)
-    if (dx < 0 && activeIdx < counters.length - 1) {
-      startVT('swipe-left', () => setActiveId(counters[activeIdx + 1].id))
-    } else if (dx > 0 && activeIdx > 0) {
-      startVT('swipe-right', () => setActiveId(counters[activeIdx - 1].id))
+    if (dx < 0) goNext()
+    else goPrev()
+  }, [activeId, goPrev, goNext])
+
+  // Arrow keys switch counters when viewing one, unless a modal is open or
+  // focus is in a text field.
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      if (view !== 'counter') return
+      if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return
+      const target = e.target as Element | null
+      if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA')) return
+      if (document.querySelector('.modal-overlay')) return
+      if (e.key === 'ArrowLeft') goPrev()
+      else goNext()
     }
-  }, [activeId, counters])
+    document.addEventListener('keydown', onKeyDown)
+    return () => document.removeEventListener('keydown', onKeyDown)
+  }, [view, goPrev, goNext])
 
   const onCounterUpdate = useCallback((updated: Counter) => {
     setCounters(prev => prev.map(c => c.id === updated.id ? updated : c))
@@ -224,6 +248,8 @@ export default function App() {
           nextHue={nextHue}
           onShowList={() => { setPrevView('counter'); startVT('to-list', () => setView('list')) }}
           onCounterUpdate={onCounterUpdate}
+          onPrev={prevCounter ? goPrev : null}
+          onNext={nextCounter ? goNext : null}
         />
       ) : view === 'multi' ? (
         <MultiCounterView

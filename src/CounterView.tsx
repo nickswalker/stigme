@@ -5,6 +5,7 @@ import type { Counter } from './db'
 import { NoteModal } from './NoteModal'
 import { HistoryModal, type HistoryEntry } from './HistoryModal'
 import { useTapFeedback } from './useTapFeedback'
+import { useEscapeKey } from './useEscapeKey'
 import { formatElapsed, exportHistoryTSV } from './utils'
 import { IconMenu, IconSettings, IconNote, IconDecrement, IconUndo, IconReset, IconChevronRight, IconDownload } from './Icons'
 import { trackEvent } from './analytics'
@@ -19,10 +20,12 @@ interface Props {
   nextHue?: number | null
   onShowList: () => void
   onCounterUpdate: (counter: Counter) => void
+  onPrev?: (() => void) | null
+  onNext?: (() => void) | null
 }
 
 
-export function CounterView({ counterId, initialHue, prevHue, nextHue, onShowList, onCounterUpdate }: Props) {
+export function CounterView({ counterId, initialHue, prevHue, nextHue, onShowList, onCounterUpdate, onPrev, onNext }: Props) {
   const { count, counter, loading, increment, decrement, undo, canUndo, deleteTap, reset, rename, setStep } = useCounter(counterId)
   const hue = counter ? counterHue(counter) : initialHue
   const [editingName, setEditingName] = useState(false)
@@ -75,6 +78,25 @@ export function CounterView({ counterId, initialHue, prevHue, nextHue, onShowLis
     await refreshLastTapAt()
   }, [undo, refreshLastTapAt])
 
+  // Escape closes the settings panel; the note and history modals handle
+  // Escape themselves, so stay inactive while either is open.
+  useEscapeKey(showSettings && !showNote && !showHistory ? () => setShowSettings(false) : null)
+
+  // Cmd/Ctrl+Z undoes the last tap when no modal is open and focus isn't in
+  // a text field (e.g. the rename input).
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      if (!(e.metaKey || e.ctrlKey) || e.shiftKey || e.key.toLowerCase() !== 'z') return
+      const target = e.target as Element | null
+      if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA')) return
+      if (showNote || showHistory) return
+      e.preventDefault()
+      handleUndo()
+    }
+    document.addEventListener('keydown', onKeyDown)
+    return () => document.removeEventListener('keydown', onKeyDown)
+  }, [showNote, showHistory, handleUndo])
+
   const handleReset = useCallback(async () => {
     if (!confirmReset) {
       setConfirmReset(true)
@@ -93,18 +115,25 @@ export function CounterView({ counterId, initialHue, prevHue, nextHue, onShowLis
     requestAnimationFrame(() => window.scrollTo(0, 0))
   }, [counterId])
 
+  const renameSubmittedRef = useRef(false)
+
   const startRename = useCallback(() => {
+    renameSubmittedRef.current = false
     setNameInput(counter?.name ?? '')
     setEditingName(true)
   }, [counter])
 
   const submitRename = useCallback(async () => {
+    // Enter fires form onSubmit, then closing the editor unmounts the input,
+    // which fires onBlur — guard against submitting twice.
+    if (renameSubmittedRef.current) return
+    renameSubmittedRef.current = true
+    setEditingName(false)
     const trimmed = nameInput.trim()
-    if (trimmed) {
+    if (trimmed && trimmed !== counter?.name) {
       await rename(trimmed)
       if (counter) onCounterUpdate({ ...counter, name: trimmed })
     }
-    setEditingName(false)
   }, [nameInput, rename, counter, onCounterUpdate])
 
   const openHistory = useCallback(async () => {
@@ -200,10 +229,20 @@ export function CounterView({ counterId, initialHue, prevHue, nextHue, onShowLis
       {/* Count display + tap button */}
       <div className="counter-middle">
         {prevHue != null && (
-          <div className="edge-peek edge-peek--left" style={{ '--peek-hue': prevHue } as React.CSSProperties} />
+          <button
+            className="edge-peek edge-peek--left"
+            style={{ '--peek-hue': prevHue } as React.CSSProperties}
+            onClick={onPrev ?? undefined}
+            aria-label="Previous counter"
+          />
         )}
         {nextHue != null && (
-          <div className="edge-peek edge-peek--right" style={{ '--peek-hue': nextHue } as React.CSSProperties} />
+          <button
+            className="edge-peek edge-peek--right"
+            style={{ '--peek-hue': nextHue } as React.CSSProperties}
+            onClick={onNext ?? undefined}
+            aria-label="Next counter"
+          />
         )}
         <div className="count-area">
           <div className="count-display">

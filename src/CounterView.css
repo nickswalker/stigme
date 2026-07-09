@@ -218,7 +218,10 @@
   top: 0;
   bottom: 0;
   width: 20px;
-  pointer-events: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .edge-peek--left {
