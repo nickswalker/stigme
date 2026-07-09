@@ -1,12 +1,11 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
 import { useCounter } from './useCounter'
-import { getTapsForCounter, getNotes, addNote, deleteNote } from './db'
+import { getTapsForCounter, getNotesForCounter, addNote, deleteNote } from './db'
 import type { Counter } from './db'
 import { NoteModal } from './NoteModal'
 import { HistoryModal, type HistoryEntry } from './HistoryModal'
-import { playTap } from './tapSound'
-import { useElapsedTimer } from './useElapsedTimer'
-import { formatElapsed, downloadAsTSV } from './utils'
+import { useTapFeedback } from './useTapFeedback'
+import { formatElapsed, exportHistoryTSV } from './utils'
 import { IconMenu, IconSettings, IconNote, IconDecrement, IconUndo, IconReset, IconChevronRight, IconDownload } from './Icons'
 import { trackEvent } from './analytics'
 import './CounterView.css'
@@ -33,13 +32,11 @@ export function CounterView({ counterId, initialHue, prevHue, nextHue, onShowLis
   const [history, setHistory] = useState<HistoryEntry[]>([])
   const [showNote, setShowNote] = useState(false)
   const [confirmReset, setConfirmReset] = useState(false)
-  const [, forceUpdate] = useState(0)
   const [flashKey, setFlashKey] = useState(0)
   const tapButtonRef = useRef<HTMLButtonElement>(null)
-  const [streak, setStreak] = useState(0)
-  const streakTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  const { elapsed, setElapsed, lastTapAtRef, lastElapsedUpdateRef } = useElapsedTimer()
+  const triggerFlash = useCallback(() => setFlashKey(k => k + 1), [])
+  const { elapsed, setElapsed, streak, lastTapAtRef, lastElapsedUpdateRef, markTap } = useTapFeedback(hue, triggerFlash)
 
   // Load last tap timestamp on mount
   useEffect(() => {
@@ -50,7 +47,7 @@ export function CounterView({ counterId, initialHue, prevHue, nextHue, onShowLis
         lastElapsedUpdateRef.current = 0
       }
     })
-  }, [counterId, loading])
+  }, [counterId, loading, lastTapAtRef, lastElapsedUpdateRef])
 
   const refreshLastTapAt = useCallback(async () => {
     const taps = await getTapsForCounter(counterId)
@@ -61,39 +58,20 @@ export function CounterView({ counterId, initialHue, prevHue, nextHue, onShowLis
       lastTapAtRef.current = null
       setElapsed(null)
     }
-  }, [counterId])
+  }, [counterId, lastTapAtRef, lastElapsedUpdateRef, setElapsed])
 
   const handleTap = useCallback(async () => {
-    playTap(hue, 1)
+    markTap(1)
     await increment()
-    const now = Date.now()
-    lastTapAtRef.current = now
-    lastElapsedUpdateRef.current = now
-    setElapsed(0)
-    forceUpdate(n => n + 1)
-    setFlashKey(k => k + 1)
-    if (counter) onCounterUpdate({ ...counter })
-    if ('vibrate' in navigator) navigator.vibrate(10)
-
-    setStreak(s => s + 1)
-    if (streakTimer.current) clearTimeout(streakTimer.current)
-    streakTimer.current = setTimeout(() => setStreak(0), 1500)
-  }, [increment, counter, onCounterUpdate])
+  }, [markTap, increment])
 
   const handleDecrement = useCallback(async () => {
-    playTap(hue, -1)
+    markTap(-1)
     await decrement()
-    const now = Date.now()
-    lastTapAtRef.current = now
-    lastElapsedUpdateRef.current = now
-    setElapsed(0)
-    forceUpdate(n => n + 1)
-    if (counter) onCounterUpdate({ ...counter })
-  }, [decrement, counter, onCounterUpdate])
+  }, [markTap, decrement])
 
   const handleUndo = useCallback(async () => {
     await undo()
-    forceUpdate(n => n + 1)
     await refreshLastTapAt()
   }, [undo, refreshLastTapAt])
 
@@ -107,15 +85,13 @@ export function CounterView({ counterId, initialHue, prevHue, nextHue, onShowLis
     setConfirmReset(false)
     lastTapAtRef.current = null
     setElapsed(null)
-    forceUpdate(n => n + 1)
-    if (counter) onCounterUpdate({ ...counter })
-  }, [reset, confirmReset, counter, onCounterUpdate])
+  }, [reset, confirmReset, lastTapAtRef, setElapsed])
 
-const handleSaveNote = useCallback(async (text: string) => {
-    await addNote(text, counter?.name ?? 'Counter')
+  const handleSaveNote = useCallback(async (text: string) => {
+    await addNote(text, counterId)
     setShowNote(false)
     requestAnimationFrame(() => window.scrollTo(0, 0))
-  }, [counter])
+  }, [counterId])
 
   const startRename = useCallback(() => {
     setNameInput(counter?.name ?? '')
@@ -134,24 +110,20 @@ const handleSaveNote = useCallback(async (text: string) => {
   const openHistory = useCallback(async () => {
     const [taps, notes] = await Promise.all([
       getTapsForCounter(counterId),
-      getNotes(),
+      getNotesForCounter(counterId),
     ])
-    const counterName = counter?.name ?? 'Counter'
     const entries: HistoryEntry[] = [
       ...taps.map(rec => ({ kind: 'tap' as const, rec })),
-      ...notes
-        .filter(n => n.counterName === counterName)
-        .map(rec => ({ kind: 'note' as const, rec })),
+      ...notes.map(rec => ({ kind: 'note' as const, rec })),
     ].sort((a, b) => b.rec.timestamp - a.rec.timestamp)
     setHistory(entries)
     setShowHistory(true)
     trackEvent('history-open')
-  }, [counterId, counter])
+  }, [counterId])
 
   const handleDeleteEntry = useCallback(async (entry: HistoryEntry) => {
     if (entry.kind === 'tap' && entry.rec.id != null) {
       await deleteTap(entry.rec.id, entry.rec.value)
-      forceUpdate(n => n + 1)
       await refreshLastTapAt()
     } else if (entry.kind === 'note' && entry.rec.id != null) {
       await deleteNote(entry.rec.id)
@@ -159,14 +131,12 @@ const handleSaveNote = useCallback(async (text: string) => {
   }, [deleteTap, refreshLastTapAt])
 
   const downloadHistory = useCallback(async () => {
-    const [taps, notes] = await Promise.all([getTapsForCounter(counterId), getNotes()])
     const name = counter?.name ?? 'Counter'
-    const tapRows = taps.map(r => ({ ts: r.timestamp, cols: [name, r.value >= 0 ? 'increment' : 'decrement', String(r.value), ''] }))
-    const noteRows = notes.filter(n => n.counterName === name).map(n => ({ ts: n.timestamp, cols: [name, 'note', '', n.text.replace(/\t|\n/g, ' ')] }))
-    downloadAsTSV([
-      ['Counter', 'Action', 'Value', 'Note', 'Timestamp'].join('\t'),
-      ...[...tapRows, ...noteRows].sort((a, b) => a.ts - b.ts).map(r => [...r.cols, new Date(r.ts).toISOString()].join('\t')),
-    ], `${name.replace(/[^a-z0-9]/gi, '_')}_history.tsv`)
+    const [taps, notes] = await Promise.all([
+      getTapsForCounter(counterId),
+      getNotesForCounter(counterId),
+    ])
+    exportHistoryTSV(taps, notes, () => name, `${name.replace(/[^a-z0-9]/gi, '_')}_history.tsv`)
     trackEvent('download-history')
   }, [counterId, counter])
 
@@ -267,9 +237,9 @@ const handleSaveNote = useCallback(async (text: string) => {
         </button>
 
         <button
-          className={`ctrl-btn undo ${!canUndo() ? 'disabled' : ''}`}
+          className={`ctrl-btn undo ${!canUndo ? 'disabled' : ''}`}
           onClick={handleUndo}
-          disabled={!canUndo()}
+          disabled={!canUndo}
           aria-label="Undo"
         >
           <IconUndo />
