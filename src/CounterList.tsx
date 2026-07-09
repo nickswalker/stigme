@@ -15,17 +15,21 @@ import {
   arrayMove,
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { getCounters, getAllTaps, getNotes, clearAllData, type Counter } from './db'
-import { getPreferWebSpeech, PREF_KEY, getPreferSound, SOUND_KEY } from './SettingsView'
+import { getCounters, getAllTaps, getNotes, type Counter } from './db'
+import { getPreferWebSpeech, setPreferWebSpeech, getPreferSound, setPreferSound } from './preferences'
 import { counterHue, hueToHex, hexToHue } from './colors'
-import { downloadAsTSV } from './utils'
+import { exportHistoryTSV } from './utils'
 import { IconClose, IconPlus, IconEdit, IconTrash, IconDragHandle, IconDownload, IconChevronRight, IconExternalLink, IconMultiGrid } from './Icons'
 import { trackEvent } from './analytics'
 import './CounterList.css'
 
 const PWA_PROMPT_KEY = 'pwa-prompt-dismissed'
 function isStandalone() {
-  return window.matchMedia('(display-mode: standalone)').matches || (navigator as any).standalone === true
+  return window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true
+}
+// Only surface "Add to Home Screen" on touch-first devices.
+function isMobileish() {
+  return window.matchMedia('(pointer: coarse)').matches
 }
 
 interface Props {
@@ -147,7 +151,7 @@ export function CounterList({ counters, activeId, onSelect, onAdd, onDelete, onC
   const [webSpeech, setWebSpeech] = useState(getPreferWebSpeech)
   const [soundEnabled, setSoundEnabled] = useState(getPreferSound)
   const [showInstallPrompt, setShowInstallPrompt] = useState(
-    () => !isStandalone() && !localStorage.getItem(PWA_PROMPT_KEY)
+    () => !isStandalone() && isMobileish() && !localStorage.getItem(PWA_PROMPT_KEY)
   )
 
   const sensors = useSensors(
@@ -169,37 +173,23 @@ export function CounterList({ counters, activeId, onSelect, onAdd, onDelete, onC
   function toggleWebSpeech() {
     const next = !webSpeech
     setWebSpeech(next)
-    localStorage.setItem(PREF_KEY, String(next))
+    setPreferWebSpeech(next)
   }
 
   function toggleSound() {
     const next = !soundEnabled
     setSoundEnabled(next)
-    localStorage.setItem(SOUND_KEY, String(next))
+    setPreferSound(next)
   }
 
   const downloadAllHistory = useCallback(async () => {
     const [allCounters, taps, notes] = await Promise.all([getCounters(), getAllTaps(), getNotes()])
     const counterMap = new Map(allCounters.map(c => [c.id, c.name]))
-    const tapRows = taps.map(r => ({
-      ts: r.timestamp,
-      cols: [counterMap.get(r.counterId) ?? r.counterId, r.value >= 0 ? 'increment' : 'decrement', String(r.value), ''],
-    }))
-    const noteRows = notes.map(n => ({
-      ts: n.timestamp,
-      cols: [n.counterName, 'note', '', n.text.replace(/\t|\n/g, ' ')],
-    }))
-    downloadAsTSV([
-      ['Counter', 'Action', 'Value', 'Note', 'Timestamp'].join('\t'),
-      ...[...tapRows, ...noteRows]
-        .sort((a, b) => a.ts - b.ts)
-        .map(r => [...r.cols, new Date(r.ts).toISOString()].join('\t')),
-    ], 'all_history.tsv')
+    exportHistoryTSV(taps, notes, id => counterMap.get(id) ?? id, 'all_history.tsv')
     trackEvent('download-all-history')
   }, [])
 
-  async function handleResetAll() {
-    await clearAllData()
+  function handleResetAll() {
     setShowResetModal(false)
     onResetAll()
   }

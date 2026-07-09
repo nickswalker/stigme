@@ -1,3 +1,5 @@
+import { getPreferSound } from './preferences'
+
 let ctx: AudioContext | null = null
 
 function getCtx(): AudioContext {
@@ -17,7 +19,7 @@ function hueToSemitones(hue: number): number {
 }
 
 export function playTap(hue: number, direction: 1 | -1 = 1): void {
-  if (localStorage.getItem('preferSound') === 'false') return
+  if (!getPreferSound()) return
   try {
     const ctx = getCtx()
     const now = ctx.currentTime

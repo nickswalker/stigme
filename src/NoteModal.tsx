@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { getPreferWebSpeech } from './SettingsView'
+import { getPreferWebSpeech } from './preferences'
 import { IconClose, IconMic } from './Icons'
 import './NoteModal.css'
 
@@ -8,14 +8,34 @@ interface Props {
   onClose: () => void
 }
 
-const SpeechRecognitionAPI =
-  (window as any).SpeechRecognition ?? (window as any).webkitSpeechRecognition
+// Minimal typings for the (non-standard) Web Speech API used here.
+interface SpeechRecognitionEventLike {
+  results: SpeechRecognitionResultList
+}
+interface SpeechRecognitionLike {
+  continuous: boolean
+  interimResults: boolean
+  onstart: (() => void) | null
+  onresult: ((event: SpeechRecognitionEventLike) => void) | null
+  onend: (() => void) | null
+  onerror: (() => void) | null
+  start(): void
+  stop(): void
+  abort(): void
+}
+type SpeechRecognitionCtor = new () => SpeechRecognitionLike
+
+const speechWindow = window as Window & {
+  SpeechRecognition?: SpeechRecognitionCtor
+  webkitSpeechRecognition?: SpeechRecognitionCtor
+}
+const SpeechRecognitionAPI = speechWindow.SpeechRecognition ?? speechWindow.webkitSpeechRecognition
 const speechSupported = !!SpeechRecognitionAPI
 
 export function NoteModal({ onSave, onClose }: Props) {
   const [text, setText] = useState('')
   const [listening, setListening] = useState(false)
-  const recogRef = useRef<any>(null)
+  const recogRef = useRef<SpeechRecognitionLike | null>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   const stopListening = useCallback(() => {
@@ -23,12 +43,13 @@ export function NoteModal({ onSave, onClose }: Props) {
   }, [])
 
   const startListening = useCallback(() => {
+    if (!SpeechRecognitionAPI) return
     const recog = new SpeechRecognitionAPI()
     recog.continuous = false
     recog.interimResults = true
     recog.onstart = () => setListening(true)
-    recog.onresult = (e: any) => {
-      const transcript = Array.from(e.results as SpeechRecognitionResultList)
+    recog.onresult = (e: SpeechRecognitionEventLike) => {
+      const transcript = Array.from(e.results)
         .map((r: SpeechRecognitionResult) => r[0].transcript)
         .join('')
       setText(transcript)
