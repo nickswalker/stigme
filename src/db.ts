@@ -11,7 +11,7 @@ export interface NoteRecord {
   id?: number
   text: string
   timestamp: number
-  counterName: string  // name of active counter at time of note
+  counterId: string  // id of the counter the note belongs to
 }
 
 export interface Counter {
@@ -25,33 +25,37 @@ export interface Counter {
 }
 
 const DB_NAME = 'stigme'
-const DB_VERSION = 3
+const DB_VERSION = 4
 
 let dbPromise: Promise<IDBPDatabase> | null = null
 
 function getDb() {
   if (!dbPromise) {
     dbPromise = openDB(DB_NAME, DB_VERSION, {
-      upgrade(db, oldVersion) {
-        if (oldVersion < 1) {
-          const tapStore = db.createObjectStore('taps', {
-            keyPath: 'id',
-            autoIncrement: true,
-          })
-          tapStore.createIndex('by-counter', 'counterId')
-          tapStore.createIndex('by-timestamp', 'timestamp')
+      // v4 is a clean schema. Any pre-v4 data (which lacked note→counter
+      // associations and un-backfilled tap values) is discarded and the
+      // stores are recreated with the current shape.
+      upgrade(db) {
+        for (const name of ['taps', 'counters', 'notes']) {
+          if (db.objectStoreNames.contains(name)) db.deleteObjectStore(name)
+        }
 
-          const counterStore = db.createObjectStore('counters', { keyPath: 'id' })
-          counterStore.createIndex('by-created', 'createdAt')
-        }
-        // v2: added `value` field to TapRecord — no schema changes needed
-        if (oldVersion < 3) {
-          const noteStore = db.createObjectStore('notes', {
-            keyPath: 'id',
-            autoIncrement: true,
-          })
-          noteStore.createIndex('by-timestamp', 'timestamp')
-        }
+        const tapStore = db.createObjectStore('taps', {
+          keyPath: 'id',
+          autoIncrement: true,
+        })
+        tapStore.createIndex('by-counter', 'counterId')
+        tapStore.createIndex('by-timestamp', 'timestamp')
+
+        const counterStore = db.createObjectStore('counters', { keyPath: 'id' })
+        counterStore.createIndex('by-created', 'createdAt')
+
+        const noteStore = db.createObjectStore('notes', {
+          keyPath: 'id',
+          autoIncrement: true,
+        })
+        noteStore.createIndex('by-timestamp', 'timestamp')
+        noteStore.createIndex('by-counter', 'counterId')
       },
     })
   }
@@ -83,11 +87,13 @@ export async function saveCounter(counter: Counter): Promise<void> {
 
 export async function deleteCounter(id: string): Promise<void> {
   const db = await getDb()
-  const tx = db.transaction(['counters', 'taps'], 'readwrite')
+  const tx = db.transaction(['counters', 'taps', 'notes'], 'readwrite')
   await tx.objectStore('counters').delete(id)
-  const taps = await tx.objectStore('taps').index('by-counter').getAllKeys(id)
-  for (const key of taps) {
-    await tx.objectStore('taps').delete(key)
+  for (const store of ['taps', 'notes'] as const) {
+    const keys = await tx.objectStore(store).index('by-counter').getAllKeys(id)
+    for (const key of keys) {
+      await tx.objectStore(store).delete(key)
+    }
   }
   await tx.done
 }
@@ -107,7 +113,7 @@ export async function removeTap(id: number): Promise<void> {
 export async function getCount(counterId: string): Promise<number> {
   const db = await getDb()
   const records = await db.getAllFromIndex('taps', 'by-counter', counterId)
-  return records.reduce((sum, r) => sum + (r.value ?? 1), 0)
+  return records.reduce((sum, r) => sum + r.value, 0)
 }
 
 export async function getTapsForCounter(counterId: string): Promise<TapRecord[]> {
@@ -130,9 +136,9 @@ export async function clearTaps(counterId: string): Promise<void> {
   await tx.done
 }
 
-export async function addNote(text: string, counterName: string): Promise<NoteRecord> {
+export async function addNote(text: string, counterId: string): Promise<NoteRecord> {
   const db = await getDb()
-  const record: NoteRecord = { text, timestamp: Date.now(), counterName }
+  const record: NoteRecord = { text, timestamp: Date.now(), counterId }
   record.id = (await db.add('notes', record)) as number
   return record
 }
@@ -140,6 +146,11 @@ export async function addNote(text: string, counterName: string): Promise<NoteRe
 export async function getNotes(): Promise<NoteRecord[]> {
   const db = await getDb()
   return db.getAllFromIndex('notes', 'by-timestamp')
+}
+
+export async function getNotesForCounter(counterId: string): Promise<NoteRecord[]> {
+  const db = await getDb()
+  return db.getAllFromIndex('notes', 'by-counter', counterId)
 }
 
 export async function deleteNote(id: number): Promise<void> {

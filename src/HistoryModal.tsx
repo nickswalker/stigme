@@ -4,7 +4,7 @@ import { IconClose, IconNoteDoc } from './Icons'
 
 export type HistoryEntry =
   | { kind: 'tap'; rec: TapRecord; counterName?: string; counterHue?: number }
-  | { kind: 'note'; rec: NoteRecord; counterHue?: number }
+  | { kind: 'note'; rec: NoteRecord; counterName?: string; counterHue?: number }
 
 interface Props {
   entries: HistoryEntry[]
@@ -101,9 +101,7 @@ export function HistoryModal({ entries: initialEntries, onDelete, onClose }: Pro
                   const dotStyle = showIdentity
                     ? { background: `hsl(${entry.counterHue}, 70%, 58%)` }
                     : undefined
-                  const identityName = entry.kind === 'tap'
-                    ? entry.counterName
-                    : entry.rec.counterName
+                  const identityName = entry.counterName
                   return (
                     <div
                       key={key}
