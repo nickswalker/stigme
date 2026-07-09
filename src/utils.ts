@@ -1,3 +1,5 @@
+import type { TapRecord, NoteRecord } from './db'
+
 export function formatElapsed(ms: number): string {
   const totalS = ms / 1000
   const ss = Math.floor(totalS)
@@ -18,4 +20,44 @@ export function downloadAsTSV(rows: string[], filename: string): void {
   a.download = filename
   a.click()
   URL.revokeObjectURL(url)
+}
+
+const HISTORY_HEADER = ['Counter', 'Action', 'Value', 'Note', 'Timestamp'].join('\t')
+
+function sanitizeCell(text: string): string {
+  return text.replace(/\t|\n/g, ' ')
+}
+
+// Assemble the shared TSV lines for a set of taps + notes. `nameFor` resolves a
+// counterId to its current display name (callers decide the fallback).
+export function buildHistoryRows(
+  taps: TapRecord[],
+  notes: NoteRecord[],
+  nameFor: (counterId: string) => string,
+): string[] {
+  const rows = [
+    ...taps.map(r => ({
+      ts: r.timestamp,
+      cols: [nameFor(r.counterId), r.value >= 0 ? 'increment' : 'decrement', String(r.value), ''],
+    })),
+    ...notes.map(n => ({
+      ts: n.timestamp,
+      cols: [nameFor(n.counterId), 'note', '', sanitizeCell(n.text)],
+    })),
+  ]
+  return [
+    HISTORY_HEADER,
+    ...rows
+      .sort((a, b) => a.ts - b.ts)
+      .map(r => [...r.cols, new Date(r.ts).toISOString()].join('\t')),
+  ]
+}
+
+export function exportHistoryTSV(
+  taps: TapRecord[],
+  notes: NoteRecord[],
+  nameFor: (counterId: string) => string,
+  filename: string,
+): void {
+  downloadAsTSV(buildHistoryRows(taps, notes, nameFor), filename)
 }

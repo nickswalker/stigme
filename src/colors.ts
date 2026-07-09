@@ -8,14 +8,24 @@ export function counterHue(counter: Counter | null | undefined): number {
   return BUTTON_HUES[(counter.colorIndex ?? 0) % BUTTON_HUES.length]
 }
 
+// Pure-math HSL→hex for hsl(hue, 75%, 58%) — matches the CSS/canvas conversion
+// used elsewhere for counter colors, without allocating a canvas per call.
 export function hueToHex(hue: number): string {
-  const canvas = document.createElement('canvas')
-  canvas.width = canvas.height = 1
-  const ctx = canvas.getContext('2d')!
-  ctx.fillStyle = `hsl(${hue}, 75%, 58%)`
-  ctx.fillRect(0, 0, 1, 1)
-  const [r, g, b] = ctx.getImageData(0, 0, 1, 1).data
-  return '#' + [r, g, b].map(x => x.toString(16).padStart(2, '0')).join('')
+  const s = 0.75
+  const l = 0.58
+  const c = (1 - Math.abs(2 * l - 1)) * s
+  const hp = ((hue % 360) + 360) % 360 / 60
+  const x = c * (1 - Math.abs((hp % 2) - 1))
+  let r = 0, g = 0, b = 0
+  if (hp < 1) [r, g, b] = [c, x, 0]
+  else if (hp < 2) [r, g, b] = [x, c, 0]
+  else if (hp < 3) [r, g, b] = [0, c, x]
+  else if (hp < 4) [r, g, b] = [0, x, c]
+  else if (hp < 5) [r, g, b] = [x, 0, c]
+  else [r, g, b] = [c, 0, x]
+  const m = l - c / 2
+  const toHex = (v: number) => Math.round((v + m) * 255).toString(16).padStart(2, '0')
+  return '#' + toHex(r) + toHex(g) + toHex(b)
 }
 
 export function hexToHue(hex: string): number {
