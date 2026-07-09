@@ -14,6 +14,7 @@ export function useCounter(counterId: string) {
   const [count, setCount] = useState(0)
   const [counter, setCounter] = useState<Counter | null>(null)
   const [loading, setLoading] = useState(true)
+  const [canUndo, setCanUndo] = useState(false)
   const undoStack = useRef<TapRecord[]>([])
 
   useEffect(() => {
@@ -21,19 +22,12 @@ export function useCounter(counterId: string) {
     async function load() {
       const [c, n] = await Promise.all([getCounter(counterId), getCount(counterId)])
       if (cancelled) return
-      if (c) {
-        setCounter(c)
-      } else {
-        const newCounter: Counter = {
-          id: counterId,
-          name: 'Counter',
-          createdAt: Date.now(),
-          step: 1,
-        }
-        await saveCounter(newCounter)
-        setCounter(newCounter)
-      }
+      // Leave counter null if it isn't known — callers use `counter?.` fallbacks.
+      // Creating one here would produce a counter App has no record of.
+      setCounter(c ?? null)
       setCount(n)
+      undoStack.current = []
+      setCanUndo(false)
       setLoading(false)
     }
     load()
@@ -44,6 +38,7 @@ export function useCounter(counterId: string) {
     const step = counter?.step ?? 1
     const record = await addTap(counterId, step)
     undoStack.current.push(record)
+    setCanUndo(true)
     setCount(c => c + step)
   }, [counterId, counter])
 
@@ -51,28 +46,39 @@ export function useCounter(counterId: string) {
     const step = counter?.step ?? 1
     const record = await addTap(counterId, -step)
     undoStack.current.push(record)
+    setCanUndo(true)
     setCount(c => c - step)
   }, [counterId, counter])
 
   const undo = useCallback(async () => {
     const last = undoStack.current.pop()
+    setCanUndo(undoStack.current.length > 0)
     if (!last || last.id == null) return
     await removeTap(last.id)
     setCount(c => c - last.value)
   }, [])
 
-  const canUndo = useCallback(() => undoStack.current.length > 0, [])
-
   const deleteTap = useCallback(async (id: number, value: number) => {
     await removeTap(id)
     undoStack.current = []
+    setCanUndo(false)
     setCount(c => c - value)
   }, [])
 
   const reset = useCallback(async () => {
     await clearTaps(counterId)
     undoStack.current = []
+    setCanUndo(false)
     setCount(0)
+  }, [counterId])
+
+  // Re-read the persisted count and drop the undo stack. Used when taps are
+  // deleted out-of-band (e.g. from the multi-view history modal).
+  const reload = useCallback(async () => {
+    const n = await getCount(counterId)
+    undoStack.current = []
+    setCanUndo(false)
+    setCount(n)
   }, [counterId])
 
   const rename = useCallback(async (name: string) => {
@@ -89,5 +95,5 @@ export function useCounter(counterId: string) {
     setCounter(updated)
   }, [counter])
 
-  return { count, counter, loading, increment, decrement, undo, canUndo, deleteTap, reset, rename, setStep }
+  return { count, counter, loading, increment, decrement, undo, canUndo, deleteTap, reset, reload, rename, setStep }
 }
