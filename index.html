@@ -45,7 +45,8 @@
         },
       }
       if (window.location.hostname !== "stigme.nickwalker.us") {
-        window.goatcounter = undefined
+        // Load the script but don't auto-count on non-production hosts.
+        window.goatcounter = { no_onload: true }
       }
     </script>
     <script async data-goatcounter="https://nickwalker.us/stats/count" src="https://nickwalker.us/stats/count.js"></script>
