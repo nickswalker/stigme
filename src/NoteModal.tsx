@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { getPreferWebSpeech } from './preferences'
+import { useEscapeKey } from './useEscapeKey'
+import { useKeyboardInset } from './useKeyboardInset'
 import { IconClose, IconMic } from './Icons'
 import './NoteModal.css'
 
@@ -37,6 +39,10 @@ export function NoteModal({ onSave, onClose }: Props) {
   const [listening, setListening] = useState(false)
   const recogRef = useRef<SpeechRecognitionLike | null>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  // Keep the sheet (textarea + actions) above the on-screen keyboard.
+  const keyboardInset = useKeyboardInset()
+
+  useEscapeKey(onClose)
 
   const stopListening = useCallback(() => {
     recogRef.current?.stop()
@@ -77,12 +83,16 @@ export function NoteModal({ onSave, onClose }: Props) {
   }, [text, onSave, onClose, stopListening])
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+    // Escape is handled by the document-level useEscapeKey listener.
     if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) handleSave()
-    if (e.key === 'Escape') onClose()
-  }, [handleSave, onClose])
+  }, [handleSave])
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div
+      className="modal-overlay"
+      style={keyboardInset > 0 ? { paddingBottom: keyboardInset } : undefined}
+      onClick={onClose}
+    >
       <div className="modal note-modal" onClick={e => e.stopPropagation()}>
         <div className="modal-header">
           <h2>Note</h2>
