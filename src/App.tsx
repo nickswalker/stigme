@@ -92,7 +92,9 @@ export default function App() {
     })
   }, [])
 
-  const addCounter = useCallback(async () => {
+  // Create a counter and return it without navigating away — used by the multi
+  // view's picker so the new counter can be appended to the grid in place.
+  const createCounter = useCallback(async (): Promise<Counter> => {
     const lastColorIndex = counters.length > 0
       ? (counters[counters.length - 1].colorIndex ?? 0)
       : -1
@@ -106,11 +108,16 @@ export default function App() {
     }
     await saveCounter(counter)
     setCounters(prev => [...prev, counter])
+    return counter
+  }, [counters])
+
+  const addCounter = useCallback(async () => {
+    const counter = await createCounter()
     startVT('to-counter', () => {
       setActiveId(counter.id)
       setView('counter')
     })
-  }, [counters])
+  }, [createCounter])
 
   const removeCounter = useCallback(async (id: string) => {
     await deleteCounter(id)
@@ -257,6 +264,7 @@ export default function App() {
           multiViewIds={multiViewIds}
           onMultiViewIdsChange={handleMultiViewIdsChange}
           onShowList={() => { setPrevView('multi'); startVT('to-list', () => setView('list')) }}
+          onCreateCounter={createCounter}
         />
       ) : view === 'help' ? (
         <HelpView onClose={() => startVT('to-list', () => setView('list'))} />
