@@ -97,6 +97,22 @@ export function CounterView({ counterId, initialHue, prevHue, nextHue, onShowLis
     return () => document.removeEventListener('keydown', onKeyDown)
   }, [showNote, showHistory, handleUndo])
 
+  // Spacebar increments the counter when no modal/panel is open and focus
+  // isn't in a text field.
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.code !== 'Space') return
+      if (e.metaKey || e.ctrlKey || e.altKey) return
+      const target = e.target as Element | null
+      if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA')) return
+      if (showNote || showHistory || showSettings) return
+      e.preventDefault()
+      handleTap()
+    }
+    document.addEventListener('keydown', onKeyDown)
+    return () => document.removeEventListener('keydown', onKeyDown)
+  }, [showNote, showHistory, showSettings, handleTap])
+
   const handleReset = useCallback(async () => {
     if (!confirmReset) {
       setConfirmReset(true)
@@ -267,7 +283,7 @@ export function CounterView({ counterId, initialHue, prevHue, nextHue, onShowLis
           aria-label="Increment counter"
         >
           <span className="tap-label">TAP</span>
-          {streak >= 2 && <span className="streak-label">{streak}</span>}
+          {streak >= 2 && <span className="streak-label">×{streak}</span>}
         </button>
       </div>
 
