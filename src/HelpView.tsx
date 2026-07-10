@@ -1,4 +1,4 @@
-import { IconChevronLeft, IconMenu, IconDecrement, IconUndo, IconNote, IconReset, IconSettings } from './Icons'
+import { IconChevronLeft, IconMenu, IconDecrement, IconUndo, IconNote, IconReset, IconSettings, IconPlus } from './Icons'
 import './HelpView.css'
 
 interface Props {
@@ -32,8 +32,8 @@ export function HelpView({ onClose }: Props) {
 
         <section className="help-section">
           <h2>Multi Counter</h2>
-          <p>The multi counter view shows up to four counters on one screen. Tap any cell to count, or use the small controls beneath each cell for undo and decrement.</p>
-          <p>Open it from the counter list.</p>
+          <p>The multi counter view shows up to four counters on one screen. Tap anywhere in a cell to count it, or use the small controls beneath each cell to decrement, undo, or add a note. On a keyboard, the number keys 1–4 count the matching cell.</p>
+          <p>Open it from the counter list. Use the <span className="help-icon-label"><IconPlus className="help-icon" />plus</span> in the header to add another counter to the view, or the pencil to remove one.</p>
         </section>
 
         <section className="help-section">

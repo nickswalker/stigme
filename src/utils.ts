@@ -6,7 +6,7 @@ export function formatElapsed(ms: number): string {
   const mm = Math.floor(ss / 60)
   const hh = Math.floor(mm / 60)
   const dd = Math.floor(hh / 24)
-  if (mm === 0) return `${ss}.${Math.floor((ms % 1000) / 100)}`
+  if (mm === 0) return `${ss}.${Math.floor((ms % 1000) / 100)}s`
   if (hh === 0) return `${mm}:${String(ss % 60).padStart(2, '0')}`
   if (dd === 0) return `${hh}:${String(mm % 60).padStart(2, '0')}:${String(ss % 60).padStart(2, '0')}`
   return `${dd}:${String(hh % 24).padStart(2, '0')}:${String(mm % 60).padStart(2, '0')}:${String(ss % 60).padStart(2, '0')}`

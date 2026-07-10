@@ -146,6 +146,7 @@ export function CounterView({ counterId, initialHue, prevHue, nextHue, onShowLis
       ...notes.map(rec => ({ kind: 'note' as const, rec })),
     ].sort((a, b) => b.rec.timestamp - a.rec.timestamp)
     setHistory(entries)
+    setShowSettings(false)
     setShowHistory(true)
     trackEvent('history-open')
   }, [counterId])
@@ -166,6 +167,7 @@ export function CounterView({ counterId, initialHue, prevHue, nextHue, onShowLis
       getNotesForCounter(counterId),
     ])
     exportHistoryTSV(taps, notes, () => name, `${name.replace(/[^a-z0-9]/gi, '_')}_history.tsv`)
+    setShowSettings(false)
     trackEvent('download-history')
   }, [counterId, counter])
 
