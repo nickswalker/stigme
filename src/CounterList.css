@@ -34,6 +34,16 @@
 }
 
 
+/* Separated from the counter rows above so it reads as a mode, not a counter. */
+.multi-counter-item {
+  margin-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.multi-counter-item.disabled {
+  opacity: 0.4;
+}
+
 .multi-counter-row {
   flex: 1;
   display: flex;
@@ -54,6 +64,10 @@
   background: var(--bg3);
 }
 
+.multi-counter-row:disabled {
+  cursor: default;
+}
+
 .multi-counter-row.active {
   color: var(--text);
   font-weight: 700;
@@ -65,13 +79,30 @@
   align-items: center;
 }
 
-.multi-counter-row-label {
+.multi-counter-row-text {
   flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.multi-counter-row-label {
   font-weight: 500;
+}
+
+.multi-counter-row-sub {
+  font-size: 13px;
+  color: var(--text-dim);
+  line-height: 1.3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .multi-counter-row-chevron {
   color: var(--text-dim);
+  flex-shrink: 0;
 }
 
 .list-body {

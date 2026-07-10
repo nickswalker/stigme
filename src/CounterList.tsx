@@ -197,6 +197,11 @@ export function CounterList({ counters, activeId, onSelect, onAdd, onDelete, onC
     onResetAll()
   }
 
+  const multiViewNames = multiViewIds
+    .map(id => counters.find(c => c.id === id)?.name)
+    .filter(Boolean)
+    .join(', ')
+
   return (
     <div className="counter-list-view">
       <div className="list-header">
@@ -240,8 +245,12 @@ export function CounterList({ counters, activeId, onSelect, onAdd, onDelete, onC
                   onRecolor={onRecolor}
                 />
               ))}
-              <div className="list-item">
-                <button className={`multi-counter-row${fromMulti ? ' active' : ''}`} onClick={onShowMulti}>
+              <div className={`list-item multi-counter-item${editing ? ' disabled' : ''}`}>
+                <button
+                  className={`multi-counter-row${fromMulti ? ' active' : ''}`}
+                  onClick={editing ? undefined : onShowMulti}
+                  disabled={editing}
+                >
                   <span className="multi-counter-row-icon" style={{ opacity: fromMulti ? 1 : 0.5 }}>
                     <IconMultiGrid
                       width="20" height="20"
@@ -251,7 +260,12 @@ export function CounterList({ counters, activeId, onSelect, onAdd, onDelete, onC
                       })}
                     />
                   </span>
-                  <span className="multi-counter-row-label">Multi Counter</span>
+                  <span className="multi-counter-row-text">
+                    <span className="multi-counter-row-label">Multi Counter</span>
+                    <span className="multi-counter-row-sub">
+                      {multiViewNames || 'Count up to 4 at once'}
+                    </span>
+                  </span>
                   <IconChevronRight width="16" height="16" className="multi-counter-row-chevron" />
                 </button>
               </div>
